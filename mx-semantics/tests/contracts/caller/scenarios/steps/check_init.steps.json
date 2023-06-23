@@ -1,6 +1,5 @@
 {
-    "name": "init and deploy",
-    "comment": "initialize the owner account and deploy caller and callee",
+    "name": "check after 1st call",
     "steps": [
         {       
             "step": "checkState",
@@ -8,19 +7,19 @@
             "accounts": {
                 "address:owner": {
                     "nonce": "*",
-                    "balance": "99000",
+                    "balance": "100000",
                     "storage": {},
                     "code": ""
                 },
                 "sc:caller": {
                     "nonce": "0",
-                    "balance": "500",
+                    "balance": "0",
                     "storage": {},
                     "code": "file:../../output/caller.wasm"
                 },
                 "sc:callee": {
                     "nonce": "0",
-                    "balance": "500",
+                    "balance": "0",
                     "storage": {},
                     "code": "file:../../../callee/output/callee.wasm"
                 }
