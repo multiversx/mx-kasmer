@@ -47,16 +47,32 @@ Notes:
 
 ## Phase 2: one coherent codebase
 
-| # | Step |
-|---|---|
-| 2.1 | Make `kmxwasm` depend on the in-repository `kmultiversx` by path, not by git tag. This moves it from `mx-semantics` 0.1.107 to 0.1.119; fix what breaks |
-| 2.2 | One K version for both halves (7.1.140), one lock file |
-| 2.3 | Vendor `wasm-semantics` K sources (currently delivered through the `pykwasm` Python package) with the upstream tag recorded and a refresh script |
-| 2.4 | Check whether the Haskell and LLVM backends' built-in `KRYPTO` hooks cover `Sha256` and `Keccak256`, the only two used. If so, drop the C++ plugin |
-| 2.4b | Bring the lemma generator back in line with `lemmas/proven-mx-lemmas.md`: three rules were added to the generated file by hand upstream (runtimeverification/kasmer-multiversx#172), so regenerating removes them. Then restore the 'lemmas are up to date' check |
-| 2.5 | Delete dead code: the function-summarisation approach in `kmxwasm` (`proofs.py` and its helpers), stale READMEs, old CI files, per-repository Dockerfiles, version-bump scripts |
-| 2.6 | Flatten the layout. Proposed: `semantics/` (VM model), `lemmas/`, `vendor/`, `tools/` (Python until replaced), `tests/` |
-| 2.7 | GitHub Actions CI on our runners: build image, build definitions, fast tests on every pull request; long proofs on a schedule |
+| # | Step | Status |
+|---|---|---|
+| 2.1 | Make `kmxwasm` depend on the in-repository `kmultiversx` by path, not by git tag (0.1.107 to 0.1.119) | done. No semantics changes lay between the two versions, only dependency bumps |
+| 2.2 | One K version (7.1.140), one environment | done. `kmxwasm` moved from K 7.1.85; the only breakage was `pyk`'s `extend_cterm` now returning a list. One image, one container, one Python environment; version pins in `deps/` |
+| 2.3 | Vendor the `wasm-semantics` K sources with the upstream release recorded and a refresh script | done: `kdist/wasm-semantics/` in `kmultiversx`, `scripts/update-wasm-semantics.sh`. `pykwasm` is still installed for its Wasm binary parser |
+| 2.4 | Drop the C++ crypto plugin if possible | done. The Haskell backend implements the `KRYPTO` hooks itself; the LLVM backend does not. Only `Sha256` and `Keccak256` are used, so `kdist/krypto/` now holds a two-function K module and a small C++ file (OpenSSL SHA-256, own Keccak-256) compiled into the interpreter. Removes cryptopp, libff, cpp-httplib, the download at build time, and six packages from the image. Covered by `tests/mandos/crypto.scen.json` |
+| 2.4b | Bring the lemma generator back in line with `lemmas/proven-mx-lemmas.md`: three rules were added to the generated file by hand upstream (runtimeverification/kasmer-multiversx#172), so regenerating removes them. Then restore the 'lemmas are up to date' check | to do |
+| 2.5 | Delete dead code and old infrastructure | done: 11 unreachable Python modules of the function-summarisation approach (about 2,100 lines) with their samples; both old `testapi` crates; per-repository CI, Dockerfiles, Nix flakes, Makefiles, version scripts and READMEs |
+| 2.6 | Flatten the layout. Proposed: `semantics/` (VM model), `lemmas/`, `vendor/`, `tools/` (Python until replaced), `tests/` | to do; needs a decision on names, see below |
+| 2.7 | GitHub Actions CI: build image, build definitions, fast tests on every pull request; long proofs on a schedule | to do |
+
+Open points from phase 2:
+
+- **Test contracts of the case studies.** `kasmer-multiversx/tests/contracts/` (pair, coindrip,
+  crowdfunding, multisig, adder) and `mx-semantics/tests/contracts/` are Rust sources written
+  against `multiversx-sc` 0.50 and the removed `testapi` crate. They cannot be built here any
+  more. They should move next to the contracts they test (`mx-sdk-rs`, `mx-exchange-sc`) or be
+  dropped; `test_load_project` depends on them and is deselected.
+- **Scenario conformance lists** (`mx-semantics/tests/*.test`, `tests/custom-scenarios/`) name
+  scenarios inside an `mx-sdk-rs` checkout. Kept as the record of what used to pass; to be
+  revived in step 4.6.
+- **Layout (2.6).** While the tooling is Python, the K sources have to stay inside the two Python
+  packages, because the build (`kdist`) finds them relative to the package. A flatter layout is
+  cheap once the Rust tool replaces `kdist`, and costs a rewrite of the build plumbing before.
+  Suggestion: postpone 2.6 to phase 5 and only merge the two Python packages if that turns out to
+  be useful earlier.
 
 ## Phase 3: upgrade K
 

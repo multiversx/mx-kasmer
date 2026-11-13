@@ -7,9 +7,10 @@ execution.
 It is built on a formal model of the MultiversX VM written in the
 [K Framework](https://kframework.org/), on top of the K semantics of WebAssembly.
 
-> **Status: imported baseline, work in progress.**
-> This repository holds the original code as developed by Runtime Verification, merged from two
-> repositories. The original tests build and pass in Docker, and the `adder-pt` example from
+> **Status: work in progress.**
+> This repository holds the code originally developed by Runtime Verification, merged from two
+> repositories and since unified: one K version, one build, no git submodules and no downloads of
+> source code at build time. The tests build and pass in Docker, and the `adder-pt` example from
 > `mx-sdk-rs` can be fuzzed and verified. The tooling is still the original Python. See
 > [Building and running the tests](#building-and-running-the-tests), [Roadmap](#roadmap) and
 > [PLAN.md](PLAN.md).
@@ -35,60 +36,65 @@ contract's ABI, it:
 
 ## Repository layout
 
-The two top-level directories are the two original repositories, each with its full history.
+The two main directories are the two original repositories, each with its full history. They are
+built and tested together.
 
-| Path | Origin | Contents |
-|---|---|---|
-| `mx-semantics/` | [runtimeverification/mx-semantics](https://github.com/runtimeverification/mx-semantics) at `216530d` | K model of the VM: accounts, contract calls, ESDT, VM hooks, scenario steps, and the test-only hooks (`kasmer.md`). Python package `kmultiversx`: scenario runner, fuzzing, claim generation. |
-| `kasmer-multiversx/` | [runtimeverification/kasmer-multiversx](https://github.com/runtimeverification/kasmer-multiversx) at `a67a732` | Lemmas needed for symbolic execution, the proof driver, and the `kasmer` command line tool. Python package `kmxwasm`. Depends on `mx-semantics`. |
+| Path | Contents |
+|---|---|
+| `mx-semantics/` | The K model of the VM and the Python package `kmultiversx` (scenario runner, fuzzing, claim generation). Originally [runtimeverification/mx-semantics](https://github.com/runtimeverification/mx-semantics) |
+| `kasmer-multiversx/` | Lemmas for symbolic execution, the proof driver and the `kasmer` command line tool, in the Python package `kmxwasm`. Depends on `kmultiversx` by path. Originally [runtimeverification/kasmer-multiversx](https://github.com/runtimeverification/kasmer-multiversx) |
+| `deps/` | Version pins: `k_release` (K Framework), `kwasm_release` (vendored Wasm semantics) |
+| `scripts/` | Build and test entry points |
+| `Dockerfile` | The development image: K plus Python. No Rust toolchain; contracts are compiled elsewhere |
 
-Where to start reading:
+Where to start reading (`K` stands for `mx-semantics/kmultiversx/src/kmultiversx/kdist`):
 
-- VM model: `mx-semantics/kmultiversx/src/kmultiversx/kdist/mx-semantics/`
-- Lemmas: `kasmer-multiversx/kmxwasm/src/kmxwasm/kdist/mxwasm-semantics/`
-- Proof loop: `kasmer-multiversx/kmxwasm/src/kmxwasm/property_testing/running.py`
-- Command line tool: `kasmer-multiversx/kmxwasm/src/kmxwasm/kasmer/`
-
-The README files inside the two directories are the originals. They describe the old setup and are
-partly out of date.
+| What | Where |
+|---|---|
+| VM model: accounts, calls, ESDT, VM hooks, scenario steps, test-only hooks (`kasmer.md`) | `K/mx-semantics/` |
+| K semantics of WebAssembly, vendored unmodified from upstream; see `VENDORED.md` there | `K/wasm-semantics/` |
+| Hash functions used by the VM hooks: K declarations and the C++ for the concrete backend | `K/krypto/` |
+| Initial configuration with the ESDT system contract deployed (generated, checked in) | `K/runtime/` |
+| Lemmas | `kasmer-multiversx/kmxwasm/src/kmxwasm/kdist/mxwasm-semantics/` |
+| Proof loop | `kasmer-multiversx/kmxwasm/src/kmxwasm/property_testing/running.py` |
+| Command line tool | `kasmer-multiversx/kmxwasm/src/kmxwasm/kasmer/` |
+| ESDT system contract model (a Rust contract) | `mx-semantics/src/esdt-system-sc/` |
+| Test contracts of the original case studies (Rust sources; not built here) | `kasmer-multiversx/tests/contracts/`, `mx-semantics/tests/contracts/` |
 
 ## Building and running the tests
 
 Everything runs in Docker. The only requirements on the host are Docker and a shell.
 
 **Docker resources.** Compiling the semantics needs more than 8 GB of memory; give Docker at least
-16 GB (24 GB was used during bring-up). The images and build products take about 20 GB of Docker
-disk. The K base image exists for amd64 only, so on Apple Silicon everything runs emulated.
-
-The two halves of the repository still need different K versions, so each has its own image,
-container and build cache. All scripts take the half as their first argument.
+16 GB (24 GB was used during bring-up), and allow about 15 GB of Docker disk. The K base image
+exists for amd64 only, so on Apple Silicon everything runs emulated.
 
 ```sh
 # 1. Build: installs the Python tooling and compiles the K definitions.
-#    First run: about 20 minutes per half, emulated on Apple Silicon. Re-runs only rebuild what changed.
-scripts/build.sh mx-semantics
-scripts/build.sh kasmer-multiversx
+#    First run: about 30 minutes emulated on Apple Silicon. Re-runs only rebuild what changed.
+scripts/build.sh
 
-# 2. Test.
-scripts/test.sh mx-semantics        # concrete execution: 6 .wast tests, 6 scenarios, 1 Python test
-scripts/test.sh kasmer-multiversx   # symbolic execution: integration, booster and unit tests, about 7 minutes
+# 2. Test (about 7 minutes).
+scripts/test.sh
 
 # 3. Optional: lemma tests and lemma proofs (about 12 minutes, plus two more definitions to compile).
-scripts/build.sh kasmer-multiversx mxwasm-semantics.lemma-tests mxwasm-semantics.lemma-proofs
-scripts/test.sh kasmer-multiversx lemmas
+scripts/build.sh lemmas
+scripts/test.sh lemmas
 ```
 
-The images and containers are created on first use. The repository is mounted into the
-containers, so edits on the host take effect on the next `build.sh` or `test.sh`.
-
-Other entry points:
+The image, the container (`mx-kasmer-dev`) and the build cache (Docker volume `mx-kasmer-cache`)
+are created on first use. The repository is mounted into the container, so edits on the host take
+effect on the next `build.sh` or `test.sh`.
 
 | Command | Purpose |
 |---|---|
-| `scripts/build.sh kasmer-multiversx mxwasm-semantics.haskell` | Build selected targets only. After changing a lemma, this one target is enough and takes about 2 minutes |
-| `scripts/test.sh kasmer-multiversx -k call_add` | Extra arguments go to `pytest` |
-| `scripts/shell.sh <half>` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
+| `scripts/test.sh semantics` | Concrete execution of the VM model: `.wast` tests, scenarios (including the crypto hooks), a Python unit test |
+| `scripts/test.sh symbolic` | Symbolic execution: integration, booster and unit tests |
+| `scripts/test.sh symbolic -k call_add` | For a single suite, extra arguments go to `pytest` |
+| `scripts/build.sh mxwasm-semantics.haskell` | Build selected targets only. After changing a lemma, this one target is enough and takes about 2 minutes |
+| `scripts/shell.sh` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
 | `scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+| `scripts/update-wasm-semantics.sh <version>` | Replace the vendored Wasm semantics with another upstream release |
 
 ### Trying a parametric test from mx-sdk-rs
 
@@ -102,15 +108,16 @@ scripts/experiments/run-pt.sh \
 
 This copies the `.wasm` and ABI files to `.pt-runs/adder-pt/`, fuzzes every `test_*` endpoint,
 generates the claims and verifies each one. Verification logs are written next to the copies.
+It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
+
 The companion `adder-pt-fail` contains tests that are expected to fail and is the check that
 failures are actually reported: one test fails under fuzzing and verification, another fails for
-a single input that only verification finds.
-It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
+a single input that only verification finds. The script exits with status 1 for it.
 
 ### Known limitations
 
-- Tests that compile contracts from the old `mx-sdk-rs` submodule are not run: the scenario
-  conformance suites of `mx-semantics`, and `test_load_project` in `kasmer-multiversx`.
+- Tests that need contracts compiled from the old `mx-sdk-rs` submodule are not run: the scenario
+  conformance suites listed in `mx-semantics/tests/*.test`, and `test_load_project`.
 - Regenerating the lemmas (`python3 -m kmxwasm.lemmas.generate`) removes three rules from
   `lemmas/proven-mx-lemmas.md` that were added to that generated file by hand upstream. Do not
   regenerate until the generator is brought in line.
@@ -120,11 +127,8 @@ It is a stopgap that bypasses `kasmer build`, which would try to compile the con
   100 MB each). Both can be deleted at any time.
 - Verification occasionally aborts at start-up with `SMT problem: ... Initial check returned
   Unknown`. This is a solver timeout, seen under emulation; run it again.
-- `kasmer-multiversx` does not yet use the `mx-semantics` directory next to it. It installs
-  `mx-semantics` 0.1.107 from the original repository. Changes under `mx-semantics/` therefore
-  affect only `scripts/test.sh mx-semantics`.
-- The crypto plugin sources are downloaded on the first build of `mx-semantics`
-  (`scripts/fetch-plugin.sh`).
+- The Python dependencies, including `pyk` and `pykwasm`, are still downloaded when the
+  environment is first installed.
 
 ## About the import
 
@@ -137,30 +141,32 @@ It is a stopgap that bypasses `kasmer build`, which would try to compile the con
   were dropped as empty (40 in `mx-semantics`, 2 in `kasmer-multiversx`).
 - As a consequence, the tag `import-baseline` does not build as is: the sources of
   [blockchain-k-plugin](https://github.com/runtimeverification/blockchain-k-plugin), previously a
-  submodule, are missing. `scripts/fetch-plugin.sh` now downloads them at the commit recorded in
-  `mx-semantics/deps/blockchain-k-plugin_release`.
-- The original CI workflows are under `*/.github/` and are not active here.
+  submodule, are missing.
+- The original CI workflows, Dockerfiles, Nix flakes and Makefiles have since been removed. They
+  remain in the history.
 
-## Pinned versions at import
+## Versions
 
-| Dependency | `mx-semantics` | `kasmer-multiversx` |
+| Dependency | Now | At import |
 |---|---|---|
-| K Framework | 7.1.140 | 7.1.85 |
-| [wasm-semantics](https://github.com/runtimeverification/wasm-semantics) | 0.1.106 | through `mx-semantics` |
-| `mx-semantics` | | 0.1.107, fetched by git tag from the original repository |
-| blockchain-k-plugin | `c9264b2` | through `mx-semantics` |
-
-The two halves were out of step with each other when imported: `kasmer-multiversx` expects
-`mx-semantics` 0.1.107, while the copy in this repository is 0.1.119.
+| K Framework | 7.1.140 (`deps/k_release`) | 7.1.140 for `mx-semantics`, 7.1.85 for `kasmer-multiversx` |
+| [wasm-semantics](https://github.com/runtimeverification/wasm-semantics) | 0.1.106, vendored (`deps/kwasm_release`) | 0.1.106, through the `pykwasm` Python package |
+| `mx-semantics`, as used by `kasmer-multiversx` | the copy in this repository (0.1.119) | 0.1.107, fetched by git tag from the original repository |
+| blockchain-k-plugin (crypto hooks, C++) | not used; replaced by `krypto/` in this repository | commit `c9264b2`, a git submodule |
 
 ## Roadmap
 
+Done:
+
 1. Reproduce the original build in Docker and get the existing tests to pass.
 2. Make `kasmer-multiversx` use the in-repository `mx-semantics`, with a single K version.
-3. Vendor the remaining external K sources (wasm-semantics, crypto hooks). No git submodules.
+3. Bring the remaining external K sources into the repository (Wasm semantics, crypto hooks).
+   No git submodules.
+
+To do:
+
 4. Upgrade to a current K Framework release.
-5. Remove the dependency on `mx-sdk-rs` and on building contracts: the tool takes compiled
-   `.wasm` as input.
+5. Remove the dependency on building contracts: the tool takes compiled `.wasm` as input.
 6. Replace the Python tooling with a Rust command line tool.
 7. Distribute prebuilt artifacts, so that users need neither Java, Haskell nor Python.
 
@@ -171,3 +177,6 @@ Verification, Inc.; see [kasmer-multiversx/LICENSE.md](kasmer-multiversx/LICENSE
 
 The original `mx-semantics` repository does not contain a license file. Licensing for that part is
 to be clarified.
+
+The vendored Wasm semantics are under the University of Illinois/NCSA Open Source License; see
+`LICENSE` in their directory.
