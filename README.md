@@ -77,7 +77,8 @@ scripts/build.sh
 # 2. Test (about 7 minutes).
 scripts/test.sh
 
-# 3. Optional: lemma tests and lemma proofs (about 12 minutes, plus two more definitions to compile).
+# 3. Optional: lemma tests, lemma proofs and the check that the generated lemmas are up to date
+#    (about 12 minutes, plus two more definitions to compile).
 scripts/build.sh lemmas
 scripts/test.sh lemmas
 ```
@@ -118,9 +119,6 @@ a single input that only verification finds. The script exits with status 1 for 
 
 - Tests that need contracts compiled from the old `mx-sdk-rs` submodule are not run: the scenario
   conformance suites listed in `mx-semantics/tests/*.test`, and `test_load_project`.
-- Regenerating the lemmas (`python3 -m kmxwasm.lemmas.generate`) removes three rules from
-  `lemmas/proven-mx-lemmas.md` that were added to that generated file by hand upstream. Do not
-  regenerate until the generator is brought in line.
 - Two lemma proof files are excluded as known broken (`mod-int-total.k`, `helper-lemmas.k`).
 - Test runs leave ignored files behind: `*.debug-log` next to the lemma tests (overwritten on each
   run) and `.pt-runs/` (one directory per contract, recreated on each run of that contract, over
@@ -129,6 +127,9 @@ a single input that only verification finds. The script exits with status 1 for 
   Unknown`. This is a solver timeout, seen under emulation; run it again.
 - The Python dependencies, including `pyk` and `pykwasm`, are still downloaded when the
   environment is first installed.
+- The CI workflow (`.github/workflows/test.yml`) is a first draft that has not run yet. Compiling
+  needs more than 8 GB of memory, which GitHub's standard runners only have for public
+  repositories.
 
 ## About the import
 
