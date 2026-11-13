@@ -48,9 +48,30 @@ test_lemmas() {
     require_targets "scripts/build.sh lemmas" mxwasm-semantics.lemma-tests mxwasm-semantics.lemma-proofs
     cd "$ROOT/kasmer-multiversx/kmxwasm"
 
+    echo ">> lemmas: generated lemmas are up to date"
+    # The generator rewrites these two files in place, emptying them first. Work on a
+    # snapshot so that a failing or diverging run leaves the working tree as it was.
+    local lemmas=src/kmxwasm/kdist/mxwasm-semantics/lemmas
+    local generated=("$lemmas/proven-mx-lemmas.md" "$lemmas/proofs/helper-lemmas.k")
+    local snapshot; snapshot=$(mktemp -d)
+    cp "${generated[@]}" "$snapshot/"
+    local outcome=ok
+    python3 -m kmxwasm.lemmas.generate > "$snapshot/generate.log" 2>&1 || outcome="the generator failed"
+    for f in "${generated[@]}"; do
+        if [ "$outcome" = ok ] && ! cmp -s "$f" "$snapshot/$(basename "$f")"; then
+            outcome="$f differs from what the generator produces"
+            diff "$snapshot/$(basename "$f")" "$f" | head -20 || true
+        fi
+    done
+    for f in "${generated[@]}"; do cp "$snapshot/$(basename "$f")" "$f"; done
+    if [ "$outcome" != ok ]; then
+        tail -5 "$snapshot/generate.log"
+        echo "!! $outcome" >&2
+        exit 1
+    fi
+    rm -rf "$snapshot"
+
     echo ">> lemmas: lemma tests and lemma proofs"
-    # The lemma generator (python3 -m kmxwasm.lemmas.generate) is deliberately not run
-    # first: its output no longer matches the checked-in proven-mx-lemmas.md.
     pytest src/tests/lemma_tests src/tests/proofs \
         --verbose --durations=10 --numprocesses=4 --dist=worksteal -p no:cacheprovider "$@"
 }
