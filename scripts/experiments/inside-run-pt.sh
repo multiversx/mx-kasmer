@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Runs inside the container. See run-pt.sh.
+
+source "$(dirname "${BASH_SOURCE[0]}")/../inside/env.sh"
+activate_venv
+
+RUN="$ROOT/$1"
+EXP="$ROOT/scripts/experiments"
+cd "$RUN"
+
+echo ">> stripping DataCount sections"
+python3 "$EXP/strip_datacount.py" test/output/*.wasm contracts/*.wasm
+
+echo ">> fuzzing (concrete, LLVM backend)"
+python3 "$EXP/fuzz_pt.py" test contracts/*.wasm 2>&1 | grep -vE '^INFO|pyk\.'
+
+echo ">> generating claims"
+python3 "$EXP/gen_claims_pt.py" test contracts/*.wasm 2>&1 | grep -vE '^INFO|pyk\.'
+
+status=0
+cd test
+for claim in generated_claims/*-spec.json; do
+    t=$(basename "$claim" -spec.json)
+    echo ">> verifying $t (symbolic, booster backend); log: .pt-runs/$(basename "$RUN")/verify-$t.log"
+    if kasmer verify "$t" --booster > "../verify-$t.log" 2>&1; then
+        echo "   Success"
+    else
+        echo "   FAILED: $(grep -m1 -E '^(Failed|Exception)' "../verify-$t.log" || echo 'see log')"
+        status=1
+    fi
+done
+exit $status
