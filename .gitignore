@@ -1,0 +1,12 @@
+# blockchain-k-plugin sources, fetched by scripts/fetch-plugin.sh
+/mx-semantics/kmultiversx/src/kmultiversx/kdist/plugin/
+
+.DS_Store
+
+# scratch directories of scripts/experiments/run-pt.sh
+/.pt-runs/
+
+__pycache__/
+.pytest_cache/
+.hypothesis/
+.property/
