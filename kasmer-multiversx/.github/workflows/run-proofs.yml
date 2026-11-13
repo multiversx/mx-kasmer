@@ -1,0 +1,58 @@
+name: 'Run Proofs'
+on:
+  schedule:
+    - cron: '0 0 * * 6' # run every saturday
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  proof:
+    name: 'Proof: ${{ matrix.name }}'
+    runs-on: [self-hosted, linux, normal]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Pair Add Liquidity
+            contract: tests/contracts/test_pair
+            test: test_add_liquidity
+            timeout: 1000
+          - name: Pair Swap
+            contract: tests/contracts/test_pair
+            test: test_swap
+            timeout: 300
+          - name: Multisig Change Quorum
+            contract: tests/contracts/test_multisig
+            test: test_change_quorum
+            timeout: 300
+    timeout-minutes: ${{ matrix.timeout }}
+    env:
+      CONTAINER: mx-wasm-proof-${{ github.sha }}
+    steps:
+      - name: 'Check out code'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.JENKINS_GITHUB_PAT }}
+          submodules: recursive
+      - name: 'Set up Docker'
+        uses: ./.github/actions/with-docker
+        with:
+          container-name: ${CONTAINER}
+      - name: 'Build kmxwasm'
+        run: docker exec --user user ${CONTAINER} make kmxwasm
+      - name: 'Build semantics'
+        run: docker exec --user user ${CONTAINER} make build
+      - name: 'Build kasmer semantics'
+        run: docker exec --user user ${CONTAINER} make build-kasmer
+      - name: 'kasmer build'
+        run: |
+          docker exec --user user ${CONTAINER} poetry -C kmxwasm run -- kasmer -C ${{ matrix.contract }} build
+      - name: 'kasmer verify'
+        run: |
+          docker exec --user user ${CONTAINER} poetry -C kmxwasm run -- kasmer -C ${{ matrix.contract }} verify ${{ matrix.test }} --booster
+      - name: 'Tear down Docker'
+        if: always()
+        run: docker stop --time 0 ${CONTAINER}

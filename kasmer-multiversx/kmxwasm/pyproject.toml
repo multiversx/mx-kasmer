@@ -1,0 +1,59 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "kmxwasm"
+version = "0.1.82"
+description = "Symbolic execution for the MultiversX blockchain with the Wasm semantics, using pyk."
+authors = [
+    "Runtime Verification, Inc. <contact@runtimeverification.com>",
+]
+
+[tool.poetry.scripts]
+kmxwasm-property = "kmxwasm.property:main"
+kasmer = "kmxwasm.kasmer.__main__:main"
+
+[tool.poetry.plugins.kdist]
+mxwasm-semantics = "kmxwasm.kdist.plugin"
+
+[tool.poetry.plugins.pytest11]
+pytest-kmxwasm = "kmxwasm.testing.fixtures"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+kmultiversx = { git = "https://github.com/runtimeverification/mx-semantics.git", tag = "v0.1.107", subdirectory = "kmultiversx" }
+
+[tool.poetry.group.dev.dependencies]
+autoflake = "*"
+black = "*"
+flake8 = "*"
+flake8-bugbear = "*"
+flake8-comprehensions = "*"
+flake8-quotes = "*"
+isort = "*"
+mypy = "*"
+pep8-naming = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+pytest-xdist = "*"
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.autoflake]
+recursive = true
+expand-star-imports = true
+remove-all-unused-imports = true
+ignore-init-module-imports = true
+remove-duplicate-keys = true
+remove-unused-variables = true
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+
+[tool.mypy]
+disallow_untyped_defs = true

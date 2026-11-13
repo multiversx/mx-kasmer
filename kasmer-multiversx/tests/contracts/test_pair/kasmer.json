@@ -1,0 +1,8 @@
+{
+  "contracts": [
+    {
+      "path": "../../../deps/mx-exchange-sc/dex/pair",
+      "name": "pair"
+    }
+  ]
+}
