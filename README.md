@@ -72,6 +72,10 @@ scripts/build.sh kasmer-multiversx
 # 2. Test.
 scripts/test.sh mx-semantics        # concrete execution: 6 .wast tests, 6 scenarios, 1 Python test
 scripts/test.sh kasmer-multiversx   # symbolic execution: integration, booster and unit tests, about 7 minutes
+
+# 3. Optional: lemma tests and lemma proofs (about 12 minutes, plus two more definitions to compile).
+scripts/build.sh kasmer-multiversx mxwasm-semantics.lemma-tests mxwasm-semantics.lemma-proofs
+scripts/test.sh kasmer-multiversx lemmas
 ```
 
 The images and containers are created on first use. The repository is mounted into the
@@ -98,13 +102,22 @@ scripts/experiments/run-pt.sh \
 
 This copies the `.wasm` and ABI files to `.pt-runs/adder-pt/`, fuzzes every `test_*` endpoint,
 generates the claims and verifies each one. Verification logs are written next to the copies.
+The companion `adder-pt-fail` contains tests that are expected to fail and is the check that
+failures are actually reported: one test fails under fuzzing and verification, another fails for
+a single input that only verification finds.
 It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
 
 ### Known limitations
 
 - Tests that compile contracts from the old `mx-sdk-rs` submodule are not run: the scenario
   conformance suites of `mx-semantics`, and `test_load_project` in `kasmer-multiversx`.
-- The lemma tests of `kasmer-multiversx` have not been run yet.
+- Regenerating the lemmas (`python3 -m kmxwasm.lemmas.generate`) removes three rules from
+  `lemmas/proven-mx-lemmas.md` that were added to that generated file by hand upstream. Do not
+  regenerate until the generator is brought in line.
+- Two lemma proof files are excluded as known broken (`mod-int-total.k`, `helper-lemmas.k`).
+- Test runs leave ignored files behind: `*.debug-log` next to the lemma tests (overwritten on each
+  run) and `.pt-runs/` (one directory per contract, recreated on each run of that contract, over
+  100 MB each). Both can be deleted at any time.
 - Verification occasionally aborts at start-up with `SMT problem: ... Initial check returned
   Unknown`. This is a solver timeout, seen under emulation; run it again.
 - `kasmer-multiversx` does not yet use the `mx-semantics` directory next to it. It installs

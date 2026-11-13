@@ -3,6 +3,9 @@
 #
 #   scripts/test.sh mx-semantics        concrete tests: .wast files, scenarios, Python unit test
 #   scripts/test.sh kasmer-multiversx   symbolic tests: integration, booster, unit
+#   scripts/test.sh kasmer-multiversx lemmas
+#                                       lemma tests and lemma proofs; needs two more definitions:
+#                                       scripts/build.sh kasmer-multiversx mxwasm-semantics.lemma-tests mxwasm-semantics.lemma-proofs
 #
 # Extra arguments are passed on to pytest (kasmer-multiversx only), e.g.
 #   scripts/test.sh kasmer-multiversx -k call_add

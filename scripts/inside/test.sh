@@ -19,6 +19,23 @@ if [ "$HALF" = mx-semantics ]; then
 
     echo ">> Python tests"
     (cd kmultiversx && pytest src/tests --verbose -p no:cacheprovider)
+elif [ "${1:-}" = lemmas ]; then
+    shift
+    cd "$ROOT/kasmer-multiversx/kmxwasm"
+
+    for target in lemma-tests lemma-proofs; do
+        kdist which "mxwasm-semantics.$target" > /dev/null 2>&1 || {
+            echo "definition missing, run first:" >&2
+            echo "  scripts/build.sh kasmer-multiversx mxwasm-semantics.lemma-tests mxwasm-semantics.lemma-proofs" >&2
+            exit 1
+        }
+    done
+
+    echo ">> lemma tests and lemma proofs"
+    # The lemma generator (python3 -m kmxwasm.lemmas.generate) is deliberately not run
+    # first: its output no longer matches the checked-in proven-mx-lemmas.md.
+    pytest src/tests/lemma_tests src/tests/proofs \
+        --verbose --durations=10 --numprocesses=4 --dist=worksteal -p no:cacheprovider "$@"
 else
     cd "$ROOT/kasmer-multiversx/kmxwasm"
 
