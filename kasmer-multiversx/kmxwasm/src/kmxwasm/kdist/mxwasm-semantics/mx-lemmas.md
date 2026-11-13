@@ -6,6 +6,7 @@ requires "lemmas/int-inequalities-lemmas.md"
 requires "lemmas/int-length-lemmas.md"
 requires "lemmas/int-normalization-lemmas.md"
 requires "lemmas/pair-specific-lemmas.md"
+requires "lemmas/sign-extension-lemmas.md"
 requires "lemmas/coindrip-specific-lemmas.md"
 requires "lemmas/sparse-bytes/sparse-bytes-lemmas.md"
 
@@ -54,6 +55,7 @@ module MX-LEMMAS  [symbolic]
   imports public MX-UPDATE-MAP
   imports private PAIR-SPECIFIC-LEMMAS
   imports private SET
+  imports private SIGN-EXTENSION-LEMMAS
   imports private SPARSE-BYTES-LEMMAS
   imports private WASM-TEXT
 
