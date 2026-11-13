@@ -11,11 +11,10 @@
 #
 # <test-contract-dir>/output must contain the test contract's .wasm and .abi.json.
 # The inputs are copied to a scratch directory (.pt-runs/<name>, git-ignored);
-# the originals are not modified. Requires scripts/build.sh kasmer-multiversx.
+# the originals are not modified. Requires scripts/build.sh.
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
 [ $# -ge 2 ] || { echo "usage: $(basename "$0") <test-contract-dir> <contract.wasm>..." >&2; exit 2; }
-select_half kasmer-multiversx
 
 TEST_DIR=$(cd "$1" && pwd); shift
 NAME=$(basename "$TEST_DIR")

@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
-# Runs the tests of one half inside its container. Run scripts/build.sh first.
+# Runs tests inside the container. Run scripts/build.sh first.
 #
-#   scripts/test.sh mx-semantics        concrete tests: .wast files, scenarios, Python unit test
-#   scripts/test.sh kasmer-multiversx   symbolic tests: integration, booster, unit
-#   scripts/test.sh kasmer-multiversx lemmas
-#                                       lemma tests and lemma proofs; needs two more definitions:
-#                                       scripts/build.sh kasmer-multiversx mxwasm-semantics.lemma-tests mxwasm-semantics.lemma-proofs
+#   scripts/test.sh                  semantics + symbolic
+#   scripts/test.sh semantics        concrete execution of the VM model: .wast files,
+#                                    scenarios, Python unit test
+#   scripts/test.sh symbolic         symbolic execution: integration, booster, unit
+#   scripts/test.sh lemmas           lemma tests and lemma proofs (needs: scripts/build.sh lemmas)
 #
-# Extra arguments are passed on to pytest (kasmer-multiversx only), e.g.
-#   scripts/test.sh kasmer-multiversx -k call_add
+# For a single suite, extra arguments are passed on to pytest, e.g.
+#   scripts/test.sh symbolic -k call_add
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-select_half "${1:-}" || usage_half "[pytest-args...]"
-shift
 
 ensure_container
 in_container scripts/inside/test.sh "$@"

@@ -8,7 +8,7 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-PIN_FILE="$ROOT/mx-semantics/deps/blockchain-k-plugin_release"
+PIN_FILE="$ROOT/deps/blockchain-k-plugin_release"
 DEST="$ROOT/mx-semantics/kmultiversx/src/kmultiversx/kdist/plugin"
 COMMIT=$(cat "$PIN_FILE")
 

@@ -1,15 +1,14 @@
 # Common definitions for the host-side scripts. Source this file, do not run it.
 #
-# The repository still consists of two halves that need different K versions,
-# so each half gets its own image and its own long-lived container:
+# Everything runs in one long-lived Docker container, created on first use:
 #
-#   half               K version file                    container
-#   mx-semantics       mx-semantics/deps/k_release       mx-kasmer-mx-semantics
-#   kasmer-multiversx  kasmer-multiversx/deps/k_release  mx-kasmer-kasmer-multiversx
+#   image      mx-kasmer-dev:k<version>   K version taken from deps/k_release
+#   container  mx-kasmer-dev
+#   volume     mx-kasmer-cache            mounted on ~/.cache in the container
 #
 # The repository is bind-mounted into the container, so edits on the host are
-# visible immediately. Build products (compiled K definitions, Python virtual
-# environments) live in a named Docker volume per half and survive the container.
+# visible immediately. Build products (compiled K definitions, the Python
+# virtual environment) live in the volume and survive the container.
 
 set -euo pipefail
 
@@ -17,21 +16,10 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 IN_CONTAINER_ROOT=/home/user/mx-kasmer
 MIN_DOCKER_MEM_GB=16
 
-usage_half() {
-    echo "usage: $(basename "$0") <mx-semantics|kasmer-multiversx> $*" >&2
-    exit 2
-}
-
-select_half() {
-    case "${1:-}" in
-        mx-semantics|kasmer-multiversx) HALF=$1 ;;
-        *) return 1 ;;
-    esac
-    K_VERSION=$(cat "$ROOT/$HALF/deps/k_release")
-    IMAGE="mx-kasmer-dev:k$K_VERSION"
-    CONTAINER="mx-kasmer-$HALF"
-    VOLUME="mx-kasmer-cache-$HALF"
-}
+K_VERSION=$(cat "$ROOT/deps/k_release")
+IMAGE="mx-kasmer-dev:k$K_VERSION"
+CONTAINER="mx-kasmer-dev"
+VOLUME="mx-kasmer-cache"
 
 ensure_image() {
     if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
@@ -53,6 +41,13 @@ check_docker_memory() {
 
 ensure_container() {
     ensure_image
+    if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
+        # Recreate the container when the K version has changed underneath it.
+        if [ "$(docker container inspect --format '{{.Config.Image}}' "$CONTAINER")" != "$IMAGE" ]; then
+            echo ">> K version changed, recreating container $CONTAINER"
+            docker rm -f "$CONTAINER" >/dev/null
+        fi
+    fi
     if ! docker container inspect "$CONTAINER" >/dev/null 2>&1; then
         echo ">> creating container $CONTAINER"
         docker run --platform linux/amd64 --name "$CONTAINER" --detach --interactive --tty \
@@ -65,9 +60,9 @@ ensure_container() {
     fi
 }
 
-# Runs a command inside the container of the selected half.
+# Runs a command inside the container.
 in_container() {
     local tty=()
     [ -t 0 ] && [ -t 1 ] && tty=(--interactive --tty)
-    docker exec ${tty[@]+"${tty[@]}"} --env HALF="$HALF" "$CONTAINER" "$@"
+    docker exec ${tty[@]+"${tty[@]}"} "$CONTAINER" "$@"
 }

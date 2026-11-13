@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
-# Installs the Python tooling and compiles the K definitions of one half,
-# inside its container. Safe to re-run: only what changed is rebuilt.
+# Installs the Python tooling and compiles the K definitions, inside the
+# container. Safe to re-run: only what changed is rebuilt.
 #
-#   scripts/build.sh mx-semantics
-#   scripts/build.sh kasmer-multiversx
-#
-# Extra arguments are passed on as kdist target names, to build a subset, e.g.
-#   scripts/build.sh kasmer-multiversx mxwasm-semantics.haskell
+#   scripts/build.sh                 everything the tests need
+#   scripts/build.sh <target>...     selected kdist targets only, for example
+#                                    scripts/build.sh mxwasm-semantics.haskell
+#                                    (enough after changing a lemma)
+#   scripts/build.sh lemmas          the two extra definitions for the lemma tests
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-select_half "${1:-}" || usage_half "[kdist-target...]"
-shift
 
 check_docker_memory
 ensure_container

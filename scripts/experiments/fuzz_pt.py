@@ -25,9 +25,11 @@ failed = []
 for name, arg_types in endpoints.items():
     try:
         kasmer.run_concrete(krun, {name: arg_types}, sym_conf, subst, verbose=False)
-    except ValueError as err:
+    except (ValueError, AssertionError) as err:
+        # Depending on the pyk version, a failing run surfaces as a ValueError carrying the
+        # VM output or as a bare AssertionError from KFuzz. Either way Hypothesis has printed
+        # the falsifying example on stderr.
         failed.append(name)
-        # Hypothesis prints the falsifying example on stderr; keep the summary short here.
         reason = [line.strip() for line in str(err).splitlines() if 'vm output' in line]
         print(f'FAILED {name!r}', *reason)
 

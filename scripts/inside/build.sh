@@ -3,24 +3,19 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-if [ "$HALF" = mx-semantics ]; then
-    "$ROOT/scripts/fetch-plugin.sh"
-    DEFAULT_TARGETS=(
-        mx-semantics.llvm-mandos
-        mx-semantics.llvm-kasmer
-        mx-semantics.haskell-mandos
-        mx-semantics.haskell-kasmer
-    )
-else
-    # mx-semantics.llvm-kasmer comes from the mx-semantics release this half is
-    # pinned to (fetched by Poetry), not from the directory next to it.
-    DEFAULT_TARGETS=(
-        mxwasm-semantics.haskell
-        mxwasm-semantics.llvm
-        mxwasm-semantics.llvm-library
-        mx-semantics.llvm-kasmer
-    )
-fi
+DEFAULT_TARGETS=(
+    mx-semantics.llvm-mandos       # concrete VM model, scenario runner
+    mx-semantics.llvm-kasmer       # concrete VM model with the test hooks: setup, fuzzing
+    mxwasm-semantics.haskell       # symbolic definition, with lemmas
+    mxwasm-semantics.llvm          # concrete helper for Wasm instantiation during proofs
+    mxwasm-semantics.llvm-library  # shared library for the booster backend
+)
+LEMMA_TARGETS=(
+    mxwasm-semantics.lemma-tests
+    mxwasm-semantics.lemma-proofs
+)
+
+"$ROOT/scripts/fetch-plugin.sh"
 
 echo ">> installing Python dependencies ($PROJECT_DIR)"
 POETRY_LOG=$(mktemp)
@@ -33,8 +28,11 @@ grep -E "^Installing the current project|^No dependencies" "$POETRY_LOG" || true
 rm -f "$POETRY_LOG"
 activate_venv
 
-TARGETS=("$@")
-[ ${#TARGETS[@]} -eq 0 ] && TARGETS=("${DEFAULT_TARGETS[@]}")
+case "${1:-}" in
+    "")     TARGETS=("${DEFAULT_TARGETS[@]}") ;;
+    lemmas) TARGETS=("${LEMMA_TARGETS[@]}") ;;
+    *)      TARGETS=("$@") ;;
+esac
 
 echo ">> compiling: ${TARGETS[*]}"
 # Two at a time: each kompile can use more than 8 GB.

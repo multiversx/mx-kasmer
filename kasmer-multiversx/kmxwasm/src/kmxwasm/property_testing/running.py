@@ -2,6 +2,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from pyk.kast.inner import KInner
 from pyk.kast.outer import KClaim
@@ -244,8 +245,7 @@ def run_claim(
                     elif touches_abstract_content(all_abstract_identifiers, node.cterm.config):
                         print('changes abstracted cell')
                         t = Timer('  Run call stack change')
-                        extend_result = tools.explorer.extend_cterm(node.cterm, node_id=node.id, execute_depth=1)
-                        kcfg.extend(extend_result, node, {})
+                        extend_node(tools, kcfg, node, {}, execute_depth=1)
                         t.measure()
                     else:
                         t = Timer('  Abstract')
@@ -263,10 +263,7 @@ def run_claim(
                                 if call_name is not None:
                                     processing.append(call_name)
                             print(f'  First: {processing}', flush=True)
-                            extend_result = tools.explorer.extend_cterm(
-                                node.cterm, node_id=node.id, cut_point_rules=all_cut_points, execute_depth=depth
-                            )
-                            kcfg.extend(extend_result, node, {})
+                            extend_node(tools, kcfg, node, {}, cut_point_rules=all_cut_points, execute_depth=depth)
                             t.measure()
                         finally:
                             t = Timer('  Concretize')
@@ -315,6 +312,20 @@ def run_claim(
         return RunException(kcfg, e, last_processed_node)
 
 
+def extend_node(
+    tools: Tools, kcfg: KCFG, node: KCFG.Node, logs: dict[int, tuple[LogEntry, ...]], **execute_args: Any
+) -> None:
+    """Execute from `node` and add the outcome to the graph.
+
+    `extend_cterm` returns a list: what happens from `node` and, when the backend
+    already knows it, what happens from the node that this produces (for example
+    a branch right after a step). Only the first is applied here. The follow-up
+    is found again when the new node is processed, as before pyk returned lists.
+    """
+    extend_results = tools.explorer.extend_cterm(node.cterm, node_id=node.id, **execute_args)
+    kcfg.extend(extend_results[0], node, logs)
+
+
 def new_leaves(kcfg: KCFG, existing: set[NodeIdLike], final: NodeIdLike) -> list[NodeIdLike]:
     return [node.id for node in kcfg.leaves if node.id not in existing and node.id != final]
 
@@ -346,8 +357,7 @@ def split_edge(tools: Tools, restart_kcfg: KCFG, start_node_id: int) -> RunClaim
 
         start_time = time.time()
 
-        extend_result = tools.explorer.extend_cterm(start.cterm, node_id=start.id, execute_depth=half_depth)
-        kcfg.extend(extend_result, start, {})
+        extend_node(tools, kcfg, start, {}, execute_depth=half_depth)
         middle_node: KCFG.Node | None = None
         for node in kcfg.leaves:
             if node.id in to_ignore:
@@ -362,10 +372,7 @@ def split_edge(tools: Tools, restart_kcfg: KCFG, start_node_id: int) -> RunClaim
         middle_time = time.time()
         print(f'{start.id} -> {middle_node.id}: {middle_time-start_time} sec')
 
-        extend_result = tools.explorer.extend_cterm(
-            middle_node.cterm, node_id=middle_node.id, execute_depth=total_depth - half_depth
-        )
-        kcfg.extend(extend_result, middle_node, {})
+        extend_node(tools, kcfg, middle_node, {}, execute_depth=total_depth - half_depth)
         result_node: KCFG.Node | None = None
         for node in kcfg.leaves:
             if node.id in to_ignore:
@@ -416,8 +423,7 @@ def profile_step(tools: Tools, restart_kcfg: KCFG, node_id: int, depth: int, gro
         logs: dict[int, tuple[LogEntry, ...]] = {}
 
         timer = Timer('Warming up the explorer')
-        extend_result = tools.explorer.extend_cterm(start.cterm, node_id=start.id, execute_depth=1)
-        kcfg.extend(extend_result, start, logs)
+        extend_node(tools, kcfg, start, logs, execute_depth=1)
         edges = kcfg.edges(source_id=node_id)
         assert len(edges) == 1
         kcfg.remove_node(edges[0].target.id)
@@ -426,8 +432,7 @@ def profile_step(tools: Tools, restart_kcfg: KCFG, node_id: int, depth: int, gro
         timer.measure()
 
         timer = Timer(f'Running {depth} steps.')
-        extend_result = tools.explorer.extend_cterm(start.cterm, node_id=start.id, execute_depth=depth)
-        kcfg.extend(extend_result, start, {})
+        extend_node(tools, kcfg, start, {}, execute_depth=depth)
         time = timer.measure()
 
         print(f'Average time per group: {time / groups}')

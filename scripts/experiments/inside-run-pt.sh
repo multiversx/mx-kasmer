@@ -14,7 +14,7 @@ python3 "$EXP/strip_datacount.py" test/output/*.wasm contracts/*.wasm
 echo ">> fuzzing (concrete, LLVM backend)"
 status=0
 python3 "$EXP/fuzz_pt.py" test contracts/*.wasm > fuzz.log 2>&1 || status=1
-grep -E "^(deploy|Testing|Passed|FAILED|fuzzing:|Falsifying|  [a-z_]+=)" fuzz.log || true
+grep -E "^(deploy|Testing|Passed|FAILED|fuzzing:)" fuzz.log || true
 echo "   full log: .pt-runs/$(basename "$RUN")/fuzz.log"
 
 echo ">> generating claims"
