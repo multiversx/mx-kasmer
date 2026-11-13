@@ -1,0 +1,63 @@
+name: 'Update Versions'
+on:
+  push:
+    branches:
+      - '_update-deps/runtimeverification/wasm-semantics'
+      - '_update-deps/runtimeverification/blockchain-k-plugin'
+# Stop in progress workflows on the same branch and same workflow to use latest committed code
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-submodule:
+    name: 'Update poetry'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Check out code'
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.JENKINS_GITHUB_PAT }}
+      - name: 'Configure GitHub user'
+        run: |
+          git config user.name devops
+          git config user.email devops@runtimeverification.com
+      - name: 'Install Poetry'
+        uses: Gr1N/setup-poetry@v8
+      - name: 'Install Nix/Cachix'
+        uses: cachix/install-nix-action@v27
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.22.1/install
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v15
+        with:
+          name: k-framework
+          authToken: ${{ secrets.CACHIX_PUBLIC_TOKEN }}
+      - name: 'Update poetry files'
+        run: |
+          PYKWASM_VERSION="$(cat deps/kwasm_release)"
+          sed -i 's!pykwasm = { git = "https://github.com/runtimeverification/wasm-semantics.git", tag = "[v0-9\.]*", subdirectory = "pykwasm" }!pykwasm = { git = "https://github.com/runtimeverification/wasm-semantics.git", tag = "v'${PYKWASM_VERSION}'", subdirectory = "pykwasm" }!' kmultiversx/pyproject.toml
+          poetry -C kmultiversx update
+          git add kmultiversx/ && git commit -m "kmultiversx/: sync poetry files ${PYKWASM_VERSION}" || true
+      - name: 'Update K release'
+        run: |
+          K_VERSION=$(poetry -C kmultiversx run python3 -c 'import pyk; print(pyk.__version__)')
+          echo ${K_VERSION} > deps/k_release
+          git add deps/k_release && git commit -m "deps/k_release: sync release file version ${K_VERSION}" || true
+      - name: 'Update plugin release file'
+        run: |
+          BKP_VERSION=$(git -C kmultiversx/src/kmultiversx/kdist/plugin rev-parse HEAD)
+          echo ${BKP_VERSION} > deps/blockchain-k-plugin_release
+          git add deps/blockchain-k-plugin_release && git commit -m "deps/blockchain-k-plugin_release: sync release file version ${BKP_VERSION}" || true
+      - name: 'Update Nix flake inputs'
+        run: |
+          PYKWASM_VERSION="$(cat deps/kwasm_release)"
+          BKP_VERSION="$(cat deps/blockchain-k-plugin_release)"
+          sed -i 's!    wasm-semantics.url = "github:runtimeverification/wasm-semantics/v[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+"!    wasm-semantics.url = "github:runtimeverification/wasm-semantics/'"v${PYKWASM_VERSION}"'"!' flake.nix
+          sed -i 's!        "github:runtimeverification/blockchain-k-plugin/.*";!        "github:runtimeverification/blockchain-k-plugin/'"${BKP_VERSION}"'";!' flake.nix
+          nix flake update
+          git add flake.nix flake.lock && git commit -m 'flake.{nix,lock}: update Nix derivations' || true
+      - name: 'Push updates'
+        run: git push

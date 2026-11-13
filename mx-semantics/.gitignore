@@ -1,0 +1,16 @@
+/.build/*
+/tests/*/*-out
+/generated_claims/*
+tmp
+
+*.pdf
+*.sty
+
+.krun*
+.kprove*
+.kompile*
+
+*.pyc
+venv
+.hypothesis
+result
