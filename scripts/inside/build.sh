@@ -15,8 +15,6 @@ LEMMA_TARGETS=(
     mxwasm-semantics.lemma-proofs
 )
 
-"$ROOT/scripts/fetch-plugin.sh"
-
 echo ">> installing Python dependencies ($PROJECT_DIR)"
 POETRY_LOG=$(mktemp)
 if ! (cd "$PROJECT_DIR" && poetry install --no-ansi --no-interaction) > "$POETRY_LOG" 2>&1; then

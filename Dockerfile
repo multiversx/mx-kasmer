@@ -1,5 +1,6 @@
 # Development image for mx-kasmer: K Framework plus what is needed to build the
-# semantics and run the (still Python-based) tooling.
+# semantics and run the (still Python-based) tooling: OpenSSL headers for the
+# SHA-256 hook, wabt for .wat test fixtures, Python and Poetry.
 #
 # Deliberately contains no Rust toolchain and no sc-meta: contracts are compiled
 # elsewhere and supplied as .wasm files.
@@ -13,15 +14,9 @@ FROM runtimeverificationinc/kframework-k:ubuntu-jammy-${K_VERSION}
 
 RUN    apt-get update            \
     && apt-get install --yes     \
-         autoconf                \
-         cmake                   \
          curl                    \
          git                     \
-         libcrypto++-dev         \
-         libprocps-dev           \
-         libsecp256k1-dev        \
          libssl-dev              \
-         libtool                 \
          python3                 \
          python3-pip             \
          python3-venv            \

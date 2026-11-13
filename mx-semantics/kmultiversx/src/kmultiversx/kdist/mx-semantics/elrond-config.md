@@ -19,7 +19,7 @@ Combine Elrond node with Wasm.
 
 requires "vmhooks/async.md"
 requires "wasm-semantics/wasm-text.md"
-requires "plugin/krypto.md"
+requires "krypto/krypto.md"
 requires "auto-allocate.md"
 requires "elrond-node.md"
 requires "esdt.md"
