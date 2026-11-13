@@ -23,7 +23,14 @@ else
 fi
 
 echo ">> installing Python dependencies ($PROJECT_DIR)"
-(cd "$PROJECT_DIR" && poetry install --no-ansi --no-interaction 2>&1 | grep -vE '^\s*$|BuildBackendWarning|classifiers|\*\*\*|^!!|_finalize_license|packaging.python.org|License ::|warnings.warn' || true)
+POETRY_LOG=$(mktemp)
+if ! (cd "$PROJECT_DIR" && poetry install --no-ansi --no-interaction) > "$POETRY_LOG" 2>&1; then
+    cat "$POETRY_LOG"
+    echo "!! poetry install failed" >&2
+    exit 1
+fi
+grep -E "^Installing the current project|^No dependencies" "$POETRY_LOG" || true
+rm -f "$POETRY_LOG"
 activate_venv
 
 TARGETS=("$@")

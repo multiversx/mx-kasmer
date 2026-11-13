@@ -8,9 +8,11 @@ It is built on a formal model of the MultiversX VM written in the
 [K Framework](https://kframework.org/), on top of the K semantics of WebAssembly.
 
 > **Status: imported baseline, work in progress.**
-> This repository currently holds the original code as developed by Runtime Verification, merged
-> from two repositories and otherwise unchanged. It has not yet been built or run from this
-> repository. See [Roadmap](#roadmap).
+> This repository holds the original code as developed by Runtime Verification, merged from two
+> repositories. The original tests build and pass in Docker, and the `adder-pt` example from
+> `mx-sdk-rs` can be fuzzed and verified. The tooling is still the original Python. See
+> [Building and running the tests](#building-and-running-the-tests), [Roadmap](#roadmap) and
+> [PLAN.md](PLAN.md).
 
 ## How it works
 
@@ -50,6 +52,67 @@ Where to start reading:
 The README files inside the two directories are the originals. They describe the old setup and are
 partly out of date.
 
+## Building and running the tests
+
+Everything runs in Docker. The only requirements on the host are Docker and a shell.
+
+**Docker resources.** Compiling the semantics needs more than 8 GB of memory; give Docker at least
+16 GB (24 GB was used during bring-up). The images and build products take about 20 GB of Docker
+disk. The K base image exists for amd64 only, so on Apple Silicon everything runs emulated.
+
+The two halves of the repository still need different K versions, so each has its own image,
+container and build cache. All scripts take the half as their first argument.
+
+```sh
+# 1. Build: installs the Python tooling and compiles the K definitions.
+#    First run: about 20 minutes per half, emulated on Apple Silicon. Re-runs only rebuild what changed.
+scripts/build.sh mx-semantics
+scripts/build.sh kasmer-multiversx
+
+# 2. Test.
+scripts/test.sh mx-semantics        # concrete execution: 6 .wast tests, 6 scenarios, 1 Python test
+scripts/test.sh kasmer-multiversx   # symbolic execution: integration, booster and unit tests, about 7 minutes
+```
+
+The images and containers are created on first use. The repository is mounted into the
+containers, so edits on the host take effect on the next `build.sh` or `test.sh`.
+
+Other entry points:
+
+| Command | Purpose |
+|---|---|
+| `scripts/build.sh kasmer-multiversx mxwasm-semantics.haskell` | Build selected targets only. After changing a lemma, this one target is enough and takes about 2 minutes |
+| `scripts/test.sh kasmer-multiversx -k call_add` | Extra arguments go to `pytest` |
+| `scripts/shell.sh <half>` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
+| `scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+
+### Trying a parametric test from mx-sdk-rs
+
+With an `mx-sdk-rs` checkout whose contracts are already built (`sc-meta all build`):
+
+```sh
+scripts/experiments/run-pt.sh \
+    ../mx-sdk-rs/contracts/parametric-tests/adder-pt \
+    ../mx-sdk-rs/contracts/examples/adder/output/adder.wasm
+```
+
+This copies the `.wasm` and ABI files to `.pt-runs/adder-pt/`, fuzzes every `test_*` endpoint,
+generates the claims and verifies each one. Verification logs are written next to the copies.
+It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
+
+### Known limitations
+
+- Tests that compile contracts from the old `mx-sdk-rs` submodule are not run: the scenario
+  conformance suites of `mx-semantics`, and `test_load_project` in `kasmer-multiversx`.
+- The lemma tests of `kasmer-multiversx` have not been run yet.
+- Verification occasionally aborts at start-up with `SMT problem: ... Initial check returned
+  Unknown`. This is a solver timeout, seen under emulation; run it again.
+- `kasmer-multiversx` does not yet use the `mx-semantics` directory next to it. It installs
+  `mx-semantics` 0.1.107 from the original repository. Changes under `mx-semantics/` therefore
+  affect only `scripts/test.sh mx-semantics`.
+- The crypto plugin sources are downloaded on the first build of `mx-semantics`
+  (`scripts/fetch-plugin.sh`).
+
 ## About the import
 
 - The tag `import-baseline` marks the state right after the merge, before any change of ours.
@@ -59,9 +122,9 @@ partly out of date.
   for example `runtimeverification/mx-semantics#331`.
 - Git submodules were removed from the entire history. Commits that only moved a submodule pointer
   were dropped as empty (40 in `mx-semantics`, 2 in `kasmer-multiversx`).
-- As a consequence, the baseline does not build as is: the sources of
+- As a consequence, the tag `import-baseline` does not build as is: the sources of
   [blockchain-k-plugin](https://github.com/runtimeverification/blockchain-k-plugin), previously a
-  submodule, are missing. The pinned commit is recorded in
+  submodule, are missing. `scripts/fetch-plugin.sh` now downloads them at the commit recorded in
   `mx-semantics/deps/blockchain-k-plugin_release`.
 - The original CI workflows are under `*/.github/` and are not active here.
 
