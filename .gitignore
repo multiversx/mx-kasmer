@@ -21,3 +21,6 @@ __pycache__/
 *.pyc
 /dist/
 .coverage
+
+# build cache directory used by CI (KASMER_CACHE)
+/.kasmer-cache/

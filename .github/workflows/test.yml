@@ -1,0 +1,46 @@
+name: Test
+
+# Builds the K definitions and runs the tests that need no compiled contracts,
+# with the same scripts as a local run (see README).
+#
+# Memory: compiling the semantics needs more than 8 GB. GitHub's standard Linux
+# runners have 16 GB for public repositories and 7 GB for private ones; on a
+# private repository this needs a larger runner.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      KASMER_CACHE: ${{ github.workspace }}/.kasmer-cache
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # Compiled definitions and the Python environment. The build only redoes
+      # what changed, so a restored cache makes most runs skip the compilation.
+      - name: Restore build cache
+        uses: actions/cache@v4
+        with:
+          path: .kasmer-cache
+          key: kasmer-${{ hashFiles('deps/**', 'Dockerfile', '**/poetry.lock') }}-${{ github.sha }}
+          restore-keys: |
+            kasmer-${{ hashFiles('deps/**', 'Dockerfile', '**/poetry.lock') }}-
+
+      - name: Create cache directory
+        run: mkdir -p .kasmer-cache
+
+      - name: Build
+        run: scripts/build.sh
+
+      - name: Test
+        run: scripts/test.sh

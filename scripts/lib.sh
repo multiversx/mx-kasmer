@@ -5,6 +5,7 @@
 #   image      mx-kasmer-dev:k<version>   K version taken from deps/k_release
 #   container  mx-kasmer-dev
 #   volume     mx-kasmer-cache            mounted on ~/.cache in the container
+#                                         (or the host directory in KASMER_CACHE)
 #
 # The repository is bind-mounted into the container, so edits on the host are
 # visible immediately. Build products (compiled K definitions, the Python
@@ -19,12 +20,26 @@ MIN_DOCKER_MEM_GB=16
 K_VERSION=$(cat "$ROOT/deps/k_release")
 IMAGE="mx-kasmer-dev:k$K_VERSION"
 CONTAINER="mx-kasmer-dev"
-VOLUME="mx-kasmer-cache"
+
+# Where build products are kept: a named Docker volume by default. Set
+# KASMER_CACHE to a host directory to use that instead (CI does, so that it can
+# save and restore the directory between runs).
+CACHE_MOUNT="${KASMER_CACHE:-mx-kasmer-cache}"
+
+# On Linux a bind mount keeps the host's user ids, so the user in the image must
+# have the id of the host user to be able to write to the repository. Docker
+# Desktop on macOS maps ownership itself, and the default id is fine there.
+IMAGE_USER_ID=1000
+if [ "$(uname -s)" = Linux ]; then
+    IMAGE_USER_ID=$(id -u)
+fi
 
 ensure_image() {
     if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
         echo ">> building image $IMAGE"
-        docker build --platform linux/amd64 --build-arg K_VERSION="$K_VERSION" -t "$IMAGE" "$ROOT"
+        docker build --platform linux/amd64 \
+            --build-arg K_VERSION="$K_VERSION" --build-arg USER_ID="$IMAGE_USER_ID" \
+            -t "$IMAGE" "$ROOT"
     fi
 }
 
@@ -52,7 +67,7 @@ ensure_container() {
         echo ">> creating container $CONTAINER"
         docker run --platform linux/amd64 --name "$CONTAINER" --detach --interactive --tty \
             --volume "$ROOT:$IN_CONTAINER_ROOT" \
-            --volume "$VOLUME:/home/user/.cache" \
+            --volume "$CACHE_MOUNT:/home/user/.cache" \
             --workdir "$IN_CONTAINER_ROOT" \
             "$IMAGE" bash >/dev/null
     elif [ "$(docker container inspect --format '{{.State.Running}}' "$CONTAINER")" != "true" ]; then
