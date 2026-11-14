@@ -10,6 +10,12 @@ DEFAULT_TARGETS=(
     mxwasm-semantics.llvm          # concrete helper for Wasm instantiation during proofs
     mxwasm-semantics.llvm-library  # shared library for the booster backend
 )
+# What CI builds: the quickest concrete definition, and the symbolic one, which
+# checks that the whole VM model and all lemmas still compile.
+QUICK_TARGETS=(
+    mx-semantics.llvm-mandos
+    mxwasm-semantics.haskell
+)
 LEMMA_TARGETS=(
     mxwasm-semantics.lemma-tests
     mxwasm-semantics.lemma-proofs
@@ -28,11 +34,16 @@ activate_venv
 
 case "${1:-}" in
     "")     TARGETS=("${DEFAULT_TARGETS[@]}") ;;
+    quick)  TARGETS=("${QUICK_TARGETS[@]}") ;;
     lemmas) TARGETS=("${LEMMA_TARGETS[@]}") ;;
     *)      TARGETS=("$@") ;;
 esac
 
 echo ">> compiling: ${TARGETS[*]}"
-# Two at a time: each kompile can use more than 8 GB.
-time kdist -v build "${TARGETS[@]}" -j2
+# Each kompile can use more than 8 GB: two at a time only with memory to spare.
+MEM_GB=$(awk '/^MemTotal:/ { print int($2 / 1024 / 1024) }' /proc/meminfo)
+JOBS=1
+[ "$MEM_GB" -ge 20 ] && JOBS=2
+echo ">> ${MEM_GB} GB of memory, building $JOBS at a time"
+time kdist -v build "${TARGETS[@]}" -j"$JOBS"
 echo ">> build done"

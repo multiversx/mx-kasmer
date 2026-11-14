@@ -2,6 +2,8 @@
 # Runs tests inside the container. Run scripts/build.sh first.
 #
 #   scripts/test.sh                  semantics + symbolic
+#   scripts/test.sh quick            sanity check, as run by CI: .wast files and scenarios
+#                                    (needs only: scripts/build.sh quick)
 #   scripts/test.sh semantics        concrete execution of the VM model: .wast files,
 #                                    scenarios, Python unit test
 #   scripts/test.sh symbolic         symbolic execution: integration, booster, unit

@@ -15,7 +15,8 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 IN_CONTAINER_ROOT=/home/user/mx-kasmer
-MIN_DOCKER_MEM_GB=16
+# A machine sold as 16 GB reports a little less, hence 14.
+MIN_DOCKER_MEM_GB=14
 
 K_VERSION=$(cat "$ROOT/deps/k_release")
 IMAGE="mx-kasmer-dev:k$K_VERSION"
@@ -49,7 +50,7 @@ check_docker_memory() {
     gb=$((bytes / 1024 / 1024 / 1024))
     if [ "$gb" -lt "$MIN_DOCKER_MEM_GB" ]; then
         echo "!! Docker has ${gb} GB of memory. Compiling the semantics needs more than 8 GB;" >&2
-        echo "!! give Docker at least ${MIN_DOCKER_MEM_GB} GB (Docker Desktop: Settings > Resources)." >&2
+        echo "!! give Docker at least 16 GB (Docker Desktop: Settings > Resources)." >&2
         exit 1
     fi
 }

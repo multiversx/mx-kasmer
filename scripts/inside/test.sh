@@ -28,6 +28,8 @@ test_semantics() {
     mandos tests/mandos/*.scen.json
     echo "   ok  $(ls tests/mandos/*.scen.json | wc -l) scenarios"
 
+    [ "${QUICK:-}" = 1 ] && return
+
     echo ">> semantics: Python tests"
     (cd kmultiversx && pytest src/tests --verbose -p no:cacheprovider "$@")
 }
@@ -78,9 +80,10 @@ test_lemmas() {
 
 case "${1:-}" in
     "")        test_semantics; test_symbolic ;;
+    quick)     QUICK=1 test_semantics ;;
     semantics) shift; test_semantics "$@" ;;
     symbolic)  shift; test_symbolic "$@" ;;
     lemmas)    shift; test_lemmas "$@" ;;
-    *) echo "unknown suite: $1 (expected semantics, symbolic or lemmas)" >&2; exit 2 ;;
+    *) echo "unknown suite: $1 (expected quick, semantics, symbolic or lemmas)" >&2; exit 2 ;;
 esac
 echo ">> tests done"

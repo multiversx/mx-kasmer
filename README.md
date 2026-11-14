@@ -89,6 +89,7 @@ effect on the next `build.sh` or `test.sh`.
 
 | Command | Purpose |
 |---|---|
+| `scripts/build.sh quick`, `scripts/test.sh quick` | The sanity check that CI runs: two definitions (about 8 minutes emulated), `.wast` tests and scenarios |
 | `scripts/test.sh semantics` | Concrete execution of the VM model: `.wast` tests, scenarios (including the crypto hooks), a Python unit test |
 | `scripts/test.sh symbolic` | Symbolic execution: integration, booster and unit tests |
 | `scripts/test.sh symbolic -k call_add` | For a single suite, extra arguments go to `pytest` |
@@ -115,6 +116,22 @@ The companion `adder-pt-fail` contains tests that are expected to fail and is th
 failures are actually reported: one test fails under fuzzing and verification, another fails for
 a single input that only verification finds. The script exits with status 1 for it.
 
+### Continuous integration
+
+`.github/workflows/test.yml` runs a short sanity check on every push to a pull request, with the
+same scripts: `scripts/build.sh quick`, then `scripts/test.sh quick`. It checks that the symbolic
+definition compiles, which type-checks the whole VM model and all lemmas, and runs the `.wast` and
+scenario tests on the smaller concrete definition.
+
+The symbolic, lemma and parametric test suites are **not** run by CI; run them locally before
+merging changes to the semantics, the lemmas or the proof driver. They need the largest definition
+(`llvm-kasmer`), which does not compile within the 16 GB of a standard GitHub runner.
+
+Compiled definitions and the Python environment are cached between runs. The build tool compares
+file modification times, which a fresh checkout resets, so the workflow first runs
+`scripts/ci/content-mtimes.sh` to give every file a timestamp derived from its content. Only
+definitions whose sources changed are then rebuilt.
+
 ### Known limitations
 
 - Tests that need contracts compiled from the old `mx-sdk-rs` submodule are not run: the scenario
@@ -127,9 +144,6 @@ a single input that only verification finds. The script exits with status 1 for 
   Unknown`. This is a solver timeout, seen under emulation; run it again.
 - The Python dependencies, including `pyk` and `pykwasm`, are still downloaded when the
   environment is first installed.
-- The CI workflow (`.github/workflows/test.yml`) is a first draft that has not run yet. Compiling
-  needs more than 8 GB of memory, which GitHub's standard runners only have for public
-  repositories.
 
 ## About the import
 

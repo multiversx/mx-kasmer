@@ -6,6 +6,8 @@
 #   scripts/build.sh <target>...     selected kdist targets only, for example
 #                                    scripts/build.sh mxwasm-semantics.haskell
 #                                    (enough after changing a lemma)
+#   scripts/build.sh quick           the two definitions of the sanity check that CI
+#                                    runs; about 8 minutes instead of 30
 #   scripts/build.sh lemmas          the two extra definitions for the lemma tests
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
