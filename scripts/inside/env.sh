@@ -11,6 +11,10 @@ PROJECT_DIR="$ROOT/kasmer-multiversx/kmxwasm"
 # The repository is bind-mounted and owned by a different user id.
 git config --global --get-all safe.directory | grep -qxF '*' || git config --global --add safe.directory '*'
 
+# No __pycache__ directories: they would land among the K sources, where the
+# build tool takes them for changed source files (this defeats the CI cache).
+export PYTHONDONTWRITEBYTECODE=1
+
 # The kompile frontend is a Java program and needs a large heap.
 export K_OPTS=${K_OPTS:--Xmx8G -Xss512m}
 

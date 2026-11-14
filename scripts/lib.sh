@@ -51,6 +51,7 @@ check_docker_memory() {
     if [ "$gb" -lt "$MIN_DOCKER_MEM_GB" ]; then
         echo "!! Docker has ${gb} GB of memory. Compiling the semantics needs more than 8 GB;" >&2
         echo "!! give Docker at least 16 GB (Docker Desktop: Settings > Resources)." >&2
+        [ -n "${GITHUB_ACTIONS:-}" ] && echo "::error::Docker has ${gb} GB of memory, at least ${MIN_DOCKER_MEM_GB} GB needed"
         exit 1
     fi
 }
