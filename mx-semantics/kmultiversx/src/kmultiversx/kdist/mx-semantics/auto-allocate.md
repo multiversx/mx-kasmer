@@ -64,7 +64,7 @@ It is treated purely as a key set -- the actual stored values are not used or st
         <moduleRegistry> ... MOD |-> HOSTMOD ... </moduleRegistry>
         <moduleInst>
           <modIdx> HOSTMOD </modIdx>
-          <exports> EXPORTS => EXPORTS [NAME <- NEXTFUNC ] </exports>
+          <exports> EXPORTS => EXPORTS [NAME <- #externIdxFunc(NEXTFUNC) ] </exports>
           <funcAddrs> FS => setExtend(FS, NEXTFUNC, NEXTADDR, -1) </funcAddrs>
           <nextFuncIdx> NEXTFUNC => NEXTFUNC +Int 1 </nextFuncIdx>
           <nextTypeIdx> NEXTTYPE => NEXTTYPE +Int 1 </nextTypeIdx>

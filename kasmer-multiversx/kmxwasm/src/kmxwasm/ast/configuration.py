@@ -1,5 +1,5 @@
 from pyk.kast.inner import KApply, KInner
-from pyk.prelude.utils import token
+from pyk.kast.prelude.utils import token
 
 GENERATED_TOP_CELL_NAME = '<generatedTop>'
 ZERO = token(0)

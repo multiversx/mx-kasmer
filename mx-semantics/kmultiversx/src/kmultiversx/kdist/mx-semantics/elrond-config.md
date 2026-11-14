@@ -768,7 +768,7 @@ Initialize the call state and invoke the endpoint function:
             <instrs> .K => ( invoke FUNCADDRS {{ FUNCIDX }} orDefault -1 ) </instrs>
             <moduleInst>
               <modIdx> MODIDX </modIdx>
-              <exports> ... FUNCNAME |-> FUNCIDX:Int </exports>
+              <exports> ... FUNCNAME |-> #externIdxFunc(FUNCIDX:Int) </exports>
               <funcAddrs> FUNCADDRS </funcAddrs>
               ...
             </moduleInst>

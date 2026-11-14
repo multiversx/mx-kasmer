@@ -11,7 +11,7 @@ from pyk.kast.inner import KApply, KInner, KSequence, KVariable
 from pyk.kcfg import KCFG
 from pyk.kcfg.show import KCFGShow
 from pyk.kore.rpc import KoreClientError
-from pyk.prelude.utils import token
+from pyk.kast.prelude.utils import token
 from pyk.utils import BugReport
 
 from .ast.configuration import wrap_with_generated_top_if_needed
@@ -131,7 +131,7 @@ class RunClaim(Action):
                     assert not success
                     print(reason)
                 print('Failed')
-                show = KCFGShow(tools.printer, tools.node_printer)
+                show = KCFGShow(tools.printer.definition, tools.node_printer)
                 for line in show.pretty(result.kcfg):
                     print(line)
                 sys.exit(-1)
@@ -140,7 +140,7 @@ class RunClaim(Action):
                 return
             if isinstance(result, RunException):
                 print('Exception')
-                show = KCFGShow(tools.printer, tools.node_printer)
+                show = KCFGShow(tools.printer.definition, tools.node_printer)
                 for line in show.pretty(result.kcfg):
                     print(line)
                 print('Last node:')
@@ -228,7 +228,7 @@ class BisectAfter(Action):
             return
         if isinstance(result, RunException):
             print('Exception')
-            show = KCFGShow(tools.printer, tools.node_printer)
+            show = KCFGShow(tools.printer.definition, tools.node_printer)
             for line in show.pretty(result.kcfg):
                 print(line)
             print('Last node:')
@@ -447,7 +447,7 @@ class Profile(Action):
             return
         if isinstance(result, RunException):
             print('Exception')
-            show = KCFGShow(tools.printer, tools.node_printer)
+            show = KCFGShow(tools.printer.definition, tools.node_printer)
             for line in show.pretty(result.kcfg):
                 print(line)
             print('Last node:')
@@ -494,7 +494,7 @@ class Tree(Action):
         t = Timer('Loading kcfg')
         kcfg = KCFG.read_cfg_data(self.kcfg_path)
         t.measure()
-        show = KCFGShow(tools.printer, tools.node_printer)
+        show = KCFGShow(tools.printer.definition, tools.node_printer)
         for line in show.pretty(kcfg):
             print(line)
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from pyk.kast.manip import is_top
-from pyk.prelude.ml import mlOr
+from pyk.kast.prelude.ml import mlOr
 
 from kmxwasm.testing.fixtures import Tools
 

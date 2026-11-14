@@ -1,8 +1,8 @@
 from pyk.cterm import CTerm
 from pyk.kast.inner import KApply, KInner, KSequence, KToken
 from pyk.kcfg import KCFG
-from pyk.prelude.collections import list_of, map_empty
-from pyk.prelude.utils import token
+from pyk.kast.prelude.collections import list_of, map_empty
+from pyk.kast.prelude.utils import token
 
 from ..ast.mx import (
     accountCellMap,

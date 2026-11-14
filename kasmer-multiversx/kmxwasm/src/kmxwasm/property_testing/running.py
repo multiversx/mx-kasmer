@@ -9,7 +9,7 @@ from pyk.kast.outer import KClaim
 from pyk.kcfg import KCFG
 from pyk.kcfg.kcfg import NodeIdLike
 from pyk.kore.rpc import LogEntry
-from pyk.prelude.collections import LIST
+from pyk.kast.prelude.collections import LIST
 
 from ..ast.mx import (
     ACCOUNTS_PATH,
@@ -323,7 +323,7 @@ def extend_node(
     is found again when the new node is processed, as before pyk returned lists.
     """
     extend_results = tools.explorer.extend_cterm(node.cterm, node_id=node.id, **execute_args)
-    kcfg.extend(extend_results[0], node, logs)
+    kcfg.extend(extend_results[0], node, logs, optimize_kcfg=False)
 
 
 def new_leaves(kcfg: KCFG, existing: set[NodeIdLike], final: NodeIdLike) -> list[NodeIdLike]:

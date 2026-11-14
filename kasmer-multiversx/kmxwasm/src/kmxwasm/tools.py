@@ -12,7 +12,7 @@ from pyk.kore.rpc import KoreClient, KoreServer, kore_server
 from pyk.ktool.kprint import KPrint
 from pyk.ktool.kprove import KProve
 from pyk.ktool.krun import KRunOutput, _krun
-from pyk.prelude.k import GENERATED_TOP_CELL
+from pyk.kast.prelude.k import GENERATED_TOP_CELL
 from pyk.utils import BugReport
 
 from .nodeprinter import KasmerNodePrinter
