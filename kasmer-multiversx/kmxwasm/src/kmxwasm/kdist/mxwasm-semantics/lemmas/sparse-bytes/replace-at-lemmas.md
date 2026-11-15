@@ -30,6 +30,20 @@ module REPLACE-AT-LEMMAS
             )
           andBool Width ==Int lengthBytes(Value)
 
+    // Until wasm-semantics 0.1.106 the next two rules were part of the definition
+    // of `replaceAt` and applied to any arguments. Since 0.1.157 the symbolic
+    // backend only has them for fully concrete arguments, which leaves writes of
+    // a symbolic value into a known chunk to the generic `updateSparseBytes`
+    // lemmas, and those do not cover every case (a write that is not aligned
+    // with the chunk, or runs past its end). They are restored here, ahead of
+    // the conversion to `updateSparseBytes` below.
+    rule replaceAt(SBChunk(#empty(N)) REST, S, Bs) => replaceAtZ(N, REST, S, Bs)
+        requires 0 <=Int S andBool S <Int N
+      [simplification(40)]
+    rule replaceAt(SBChunk(#bytes(B)) REST, S, Bs) => replaceAtB(B, REST, S, Bs)
+        requires 0 <=Int S andBool S <Int lengthBytes(B)
+      [simplification(40)]
+
     rule replaceAt(SB:SparseBytes, Addr:Int, Value:Bytes)
         => updateSparseBytes(
               replaceAt(Value), SB, Addr, lengthBytes(Value)
