@@ -1,6 +1,7 @@
 ```k
 requires "mx-lemmas.md"
 requires "mx-semantics/kasmer.md"
+requires "lemmas/booster-equality-lemmas.md"
 requires "lemmas/proven-mx-lemmas.md"
 requires "proof-extensions.md"
 requires "specification-lemmas.md"
@@ -16,6 +17,7 @@ module MX-WASM
   imports MX-LEMMAS-BASIC
   imports MX-WASM-NO-LOCAL-LEMMAS
   imports PROVEN-MX-LEMMAS
+  imports BOOSTER-EQUALITY-LEMMAS
 endmodule
 
 module MX-WASM-NO-LOCAL-LEMMAS

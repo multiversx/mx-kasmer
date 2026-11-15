@@ -1,0 +1,68 @@
+name: Sanity check
+
+# A short check on every push to a pull request, with the same scripts as a
+# local run (see README):
+#
+#   - the symbolic definition compiles, which type-checks the whole VM model
+#     and all lemmas;
+#   - the smaller concrete definition compiles, and the .wast and scenario
+#     tests pass on it.
+#
+# The heavier suites (symbolic execution, lemma tests and proofs) are run
+# locally. They need the largest definition, which does not compile within the
+# 16 GB of a standard runner.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanity:
+    name: Build and quick tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Build products go to this directory instead of a Docker volume, so that
+      # they can be saved and restored between runs.
+      KASMER_CACHE: ${{ github.workspace }}/.kasmer-cache
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Show runner resources
+        run: |
+          nproc
+          free -g
+          df -h /
+
+      # Compiled definitions and the Python environment. The first key part
+      # changes with the toolchain, the second with the sources. On a partial
+      # match the build redoes only the definitions whose sources changed.
+      - name: Restore build cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            .kasmer-cache/kdist-*
+            .kasmer-cache/pypoetry/virtualenvs
+          key: kasmer-${{ hashFiles('deps/**', 'Dockerfile', '**/poetry.lock') }}-${{ hashFiles('mx-semantics/kmultiversx/src/**', 'kasmer-multiversx/kmxwasm/src/kmxwasm/**') }}
+          restore-keys: |
+            kasmer-${{ hashFiles('deps/**', 'Dockerfile', '**/poetry.lock') }}-
+
+      - name: Prepare
+        run: |
+          mkdir -p .kasmer-cache
+          # Without this, the restored definitions would all be rebuilt.
+          scripts/ci/content-mtimes.sh
+
+      - name: Build
+        run: scripts/build.sh quick
+
+      - name: Test
+        run: scripts/test.sh quick

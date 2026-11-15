@@ -17,7 +17,7 @@ class SourceTarget(Target):
     SRC_DIR: Final = Path(__file__).parent
 
     def build(self, output_dir: Path, deps: dict[str, Path], args: dict[str, Any], verbose: bool) -> None:
-        shutil.copytree(deps['mx-semantics.source'] / 'plugin', output_dir / 'plugin')
+        shutil.copytree(deps['mx-semantics.source'] / 'krypto', output_dir / 'krypto')
         shutil.copytree(deps['mx-semantics.source'] / 'wasm-semantics', output_dir / 'wasm-semantics')
         shutil.copytree(deps['mx-semantics.source'] / 'mx-semantics', output_dir / 'mx-semantics')
         shutil.copytree(self.SRC_DIR / 'mxwasm-semantics', output_dir / 'mxwasm-semantics')
