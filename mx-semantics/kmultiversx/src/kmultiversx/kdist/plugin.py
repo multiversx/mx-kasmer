@@ -56,7 +56,7 @@ def llvm_target(main_file_name: str, main_module: str, syntax_module: str) -> Ko
             'hook_namespaces': ['KRYPTO'],
             'opt_level': 2,
             # The KRYPTO hooks are compiled into the interpreter from source.
-            'ccopts': ['-g', '-std=c++17', str(src_dir / 'krypto' / 'krypto.cpp'), '-lcrypto'],
+            'ccopts': ['-g', '-std=c++20', str(src_dir / 'krypto' / 'krypto.cpp'), '-lcrypto'],
         },
     )
 

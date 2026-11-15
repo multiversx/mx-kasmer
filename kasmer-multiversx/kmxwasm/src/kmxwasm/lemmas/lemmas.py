@@ -4,9 +4,9 @@ from pyk.kast.att import _ANY, _NONE, EMPTY_ATT, AttKey, Atts, KAtt
 from pyk.kast.inner import KInner, KRewrite, KSequence, KVariable, Subst
 from pyk.kast.manip import count_vars, free_vars
 from pyk.kast.outer import KClaim, KDefinition, KFlatModule, KImport, KRequire, KRule
-from pyk.prelude.k import DOTS
-from pyk.prelude.kbool import TRUE
-from pyk.prelude.ml import mlAnd, mlEquals
+from pyk.kast.prelude.k import DOTS
+from pyk.kast.prelude.kbool import TRUE
+from pyk.kast.prelude.ml import mlAnd, mlEquals
 
 from .expression import commands_cell, instrs_cell, is_ml, k_cell, mandos_cell, proofOperationList
 from .proof import proofEnd, runProof, runProofStep

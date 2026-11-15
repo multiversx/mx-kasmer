@@ -211,13 +211,13 @@ We allow 2 kinds of actions:
     rule <instrs> ( invoke ENAME:WasmString .Instrs ) => invoke CUR ENAME ... </instrs>
          <curModIdx> CUR </curModIdx>
 
-    rule <instrs> ( invoke ID:Identifier ENAME:WasmString .Instrs ) => invoke MODIDX ENAME ... </instrs>
-         <moduleIds> ... ID |-> MODIDX ... </moduleIds>
+    rule <instrs> ( invoke IDENT:Identifier ENAME:WasmString .Instrs ) => invoke MODIDX ENAME ... </instrs>
+         <moduleIds> ... IDENT |-> MODIDX ... </moduleIds>
 
     rule <instrs> invoke MODIDX:Int ENAME:WasmString => ( invoke FUNCADDRS {{ IDX }} orDefault -1 ):Instr ... </instrs>
          <moduleInst>
            <modIdx> MODIDX </modIdx>
-           <exports> ... ENAME |-> IDX ... </exports>
+           <exports> ... ENAME |-> #externIdxFunc( IDX ) ... </exports>
            <funcAddrs> FUNCADDRS </funcAddrs>
            ...
          </moduleInst>
@@ -226,13 +226,13 @@ We allow 2 kinds of actions:
     rule <instrs> ( get NAME:WasmString ) => get CUR NAME  ... </instrs>
          <curModIdx> CUR </curModIdx>
 
-    rule <instrs> ( get MOD:Identifier NAME:WasmString ) => get MODIDX NAME ... </instrs>
-         <moduleIds> ... MOD |-> MODIDX ... </moduleIds>
+    rule <instrs> ( get MDL:Identifier NAME:WasmString ) => get MODIDX NAME ... </instrs>
+         <moduleIds> ... MDL |-> MODIDX ... </moduleIds>
 
     rule <instrs> get MODIDX:Int NAME:WasmString => VAL ... </instrs>
          <moduleInst>
            <modIdx> MODIDX </modIdx>
-           <exports> ... NAME |-> TFIDX ... </exports>
+           <exports> ... NAME |-> #externIdxGlobal( TFIDX ) ... </exports>
            <globIds> IDS </globIds>
            <globalAddrs> ... #ContextLookup(IDS, TFIDX) |-> ADDR ... </globalAddrs>
            ...
@@ -254,8 +254,8 @@ We will reference modules by name in imports.
          <nextModuleIdx> NEXT </nextModuleIdx>
       requires NEXT >Int 0
 
-    rule <instrs> ( register S ID:Identifier ) => ( register S IDX ) ... </instrs>
-         <moduleIds> ... ID |-> IDX ... </moduleIds>
+    rule <instrs> ( register S IDENT:Identifier ) => ( register S IDX ) ... </instrs>
+         <moduleIds> ... IDENT |-> IDX ... </moduleIds>
 
     rule <instrs> ( register S:WasmString IDX:Int ) => .K ... </instrs>
          <moduleRegistry> ... .Map => S |-> IDX ... </moduleRegistry>
@@ -321,19 +321,19 @@ The conformance tests contain imports of the `"spectest"` module.
             start: .EmptyStmts , 
             importDefns: .EmptyStmts , 
             exports: 
-                #export (... name: #token("\"global_i32\""    , "WasmStringToken") , index: 0 )  
-                #export (... name: #token("\"global_i64\""    , "WasmStringToken") , index: 1 )  
-                #export (... name: #token("\"global_f32\""    , "WasmStringToken") , index: 2 )  
-                #export (... name: #token("\"global_f64\""    , "WasmStringToken") , index: 3 )  
-                #export (... name: #token("\"table\""    , "WasmStringToken") , index: 0 )  
-                #export (... name: #token("\"memory\""    , "WasmStringToken") , index: 0 )  
-                #export (... name: #token("\"print\""    , "WasmStringToken") , index: 0 )  
-                #export (... name: #token("\"print_i32\""    , "WasmStringToken") , index: 1 )  
-                #export (... name: #token("\"print_i64\""    , "WasmStringToken") , index: 2 )  
-                #export (... name: #token("\"print_f32\""    , "WasmStringToken") , index: 3 )  
-                #export (... name: #token("\"print_f64\""    , "WasmStringToken") , index: 4 )  
-                #export (... name: #token("\"print_i32_f32\""    , "WasmStringToken") , index: 5 )  
-                #export (... name: #token("\"print_f64_f64\""    , "WasmStringToken") , index: 6 )  
+                #export (... name: #token("\"global_i32\""    , "WasmStringToken") , index: #externIdxGlobal(0) )  
+                #export (... name: #token("\"global_i64\""    , "WasmStringToken") , index: #externIdxGlobal(1) )  
+                #export (... name: #token("\"global_f32\""    , "WasmStringToken") , index: #externIdxGlobal(2) )  
+                #export (... name: #token("\"global_f64\""    , "WasmStringToken") , index: #externIdxGlobal(3) )  
+                #export (... name: #token("\"table\""         , "WasmStringToken") , index: #externIdxTable(0) )  
+                #export (... name: #token("\"memory\""        , "WasmStringToken") , index: #externIdxMemory(0) )  
+                #export (... name: #token("\"print\""         , "WasmStringToken") , index: #externIdxFunc(0) )  
+                #export (... name: #token("\"print_i32\""     , "WasmStringToken") , index: #externIdxFunc(1) )  
+                #export (... name: #token("\"print_i64\""     , "WasmStringToken") , index: #externIdxFunc(2) )  
+                #export (... name: #token("\"print_f32\""     , "WasmStringToken") , index: #externIdxFunc(3) )  
+                #export (... name: #token("\"print_f64\""     , "WasmStringToken") , index: #externIdxFunc(4) )  
+                #export (... name: #token("\"print_i32_f32\"" , "WasmStringToken") , index: #externIdxFunc(5) )  
+                #export (... name: #token("\"print_f64_f64\"" , "WasmStringToken") , index: #externIdxFunc(6) )  
                 .EmptyStmts , 
             metadata: #meta (... id:  , funcIds: .Map , filename: .String ) 
         )
@@ -372,7 +372,7 @@ Except `assert_return` and `assert_trap`, the remaining rules are directly reduc
     rule <instrs> (assert_malformed  _MOD          _DESC) => .K ... </instrs>
     rule <instrs> (assert_invalid    _MOD          _DESC) => .K ... </instrs>
     rule <instrs> (assert_unlinkable _MOD          _DESC) => .K ... </instrs>
-    rule <instrs> (assert_trap       MOD:ModuleDecl DESC) => sequenceStmts(text2abstract(MOD .Stmts)) ~> #assertTrap DESC ... </instrs>
+    rule <instrs> (assert_trap       MDL:ModuleDecl DESC) => sequenceStmts(text2abstract(MDL .Stmts)) ~> #assertTrap DESC ... </instrs>
 ```
 
 And we implement some helper assertions to help testing.

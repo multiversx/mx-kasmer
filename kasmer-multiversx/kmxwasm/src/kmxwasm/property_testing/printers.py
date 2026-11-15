@@ -3,7 +3,7 @@ from pyk.kast.inner import KApply, KInner, KVariable
 from pyk.kast.manip import ml_pred_to_bool
 from pyk.kcfg import KCFG
 from pyk.ktool.kprint import KPrint
-from pyk.prelude.kbool import TRUE
+from pyk.kast.prelude.kbool import TRUE
 
 from ..ast.mx import (
     FINISH_EXECUTE_ON_DEST_CONTEXT_LABEL,

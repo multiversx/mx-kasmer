@@ -4,10 +4,10 @@ import sys
 from pathlib import Path
 
 from pyk.kast.att import KAtt
-from pyk.prelude.collections import LIST
-from pyk.prelude.kbool import BOOL, FALSE, TRUE, andBool, notBool, orBool
-from pyk.prelude.kint import INT, eqInt, gtInt, leInt, ltInt
-from pyk.prelude.ml import mlEquals
+from pyk.kast.prelude.collections import LIST
+from pyk.kast.prelude.kbool import BOOL, FALSE, TRUE, andBool, notBool, orBool
+from pyk.kast.prelude.kint import INT, eqInt, gtInt, leInt, ltInt
+from pyk.kast.prelude.ml import mlEquals
 
 from ..build import LEMMA_PROOFS, semantics
 from .expression import (

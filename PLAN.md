@@ -76,21 +76,32 @@ Open points from phase 2:
 
 ## Phase 3: upgrade K
 
-| # | Step |
-|---|---|
-| 3.1 | Upgrade `wasm-semantics` and K to current releases in as few jumps as the breakage allows; keep the concrete tests green first |
-| 3.2 | Regenerate the runtime configuration (`llvm-kasmer.json`) |
-| 3.3 | Get symbolic tests green again; repair lemmas where the backend now simplifies differently |
-| 3.4 | Re-run the long proofs (multisig, pair) and compare times against phase 1 |
+| # | Step | Status |
+|---|---|---|
+| 3.1 | Upgrade `wasm-semantics` and K to current releases in as few jumps as the breakage allows; keep the concrete tests green first | done in one jump (2026-11-14): K 7.1.140 to 7.1.337, wasm-semantics 0.1.106 to 0.1.157. Needed: C++20 for the interpreter, new `pyk` module paths and three API changes, export entries now carry their kind (`#externIdxFunc`) |
+| 3.2 | Regenerate the runtime configuration (`llvm-kasmer.json`) | done by converting the checked-in terms instead (`scripts/migrations/kast-wasm-semantics-0.1.157.py`), also for the eight test claims. The kind of each export is inferred from its name, because the `.wasm` files the claims came from are not available |
+| 3.3 | Get symbolic tests green again; repair lemmas where the backend now simplifies differently | done. Two repairs: (1) the booster aborts with "Unexpected sort injection" on rule `callContractAux-err-callback` unless its function name variable is typed `WasmStringToken` (a booster bug, not reported upstream yet); (2) upstream now applies the `replaceAt` chunk rules to concrete arguments only, they are restored in `lemmas/sparse-bytes/replace-at-lemmas.md` |
+| 3.4 | Re-run the long proofs (multisig, pair) and compare times against phase 1 | to do; depends on having those contracts built (see open points of phase 2). Every instruction is now wrapped in `#instrWithPos`, whose cost on long proofs is unknown |
+
+Notes:
+
+- Compiling two LLVM definitions at once now runs out of memory at 24 GB (the compiler is killed,
+  and the build then reports a misleading Java or `getcwd` error). `scripts/build.sh` builds one
+  at a time below 30 GB.
+- Results after the upgrade (2026-11-15, emulated, 24 GB): full build 82 minutes (30 before, when
+  two definitions were compiled at once); 6 `.wast` and 7 scenario tests, 13 symbolic tests, 48
+  lemma tests and 4 lemma proofs pass; `adder-pt` fuzzes and verifies in 8 minutes in total (about
+  6 before); `adder-pt-fail` is rejected as expected.
+- Not handled: an exported global or memory called as an endpoint matches neither `mkCall` rule.
 
 ## Phase 4: invert the dependency on mx-sdk-rs
 
 | # | Step |
 |---|---|
 | 4.1 | Split `kasmer build` into "compile contracts" (leaves this repository) and "generate claims from `.wasm` + ABI" (stays) |
-| 4.2 | Run `adder-pt` from `mx-sdk-rs`, built with the current framework, end to end: fuzz and verify. **Working on the imported code (2026-11-13)** through `scripts/experiments/run-pt.sh`: fuzzing passes, both tests verify (about 2 and 4 minutes, emulated). Relies on the DataCount workaround and the sign-extension lemma of 4.4. Failure reporting checked with `adder-pt-fail`: an always-failing test is rejected by fuzzing and verification, and a test that fails for one input passes fuzzing and is rejected by verification with the right path condition. Still to do: a proper replacement for `kasmer build` |
+| 4.2 | Run `adder-pt` from `mx-sdk-rs`, built with the current framework, end to end: fuzz and verify. **Working on the imported code (2026-11-13)** through `scripts/experiments/run-pt.sh`: fuzzing passes, both tests verify (about 2 and 4 minutes, emulated). Relies on the sign-extension lemma of 4.4. Failure reporting checked with `adder-pt-fail`: an always-failing test is rejected by fuzzing and verification, and a test that fails for one input passes fuzzing and is rejected by verification with the right path condition. Still to do: a proper replacement for `kasmer build` |
 | 4.3 | Measure the VM hook gap against current contracts and add the missing hooks to the model. Known so far: `managedGetAllTransfersCallValue`, `mBufferToSmallIntUnsigned`, `mBufferFromSmallIntUnsigned`, `managedDeployFromSourceContract`, `managedUpgradeFromSourceContract` |
-| 4.4 | Accept the Wasm that current Rust compilers produce. (a) The old Wasm parser rejects the DataCount section (id 12); for now it is stripped, which is safe when `memory.init` and `data.drop` are unused. Needs a real fix in the parser replacement. (b) Sign-extension operators (`i32.extend8_s` and friends, on by default since Rust 1.82) had no lemmas, so `#extends` on a symbolic value ended in a spurious `trap`. **Fixed** for values within the signed range of the source width in `lemmas/sign-extension-lemmas.md`; not fixed upstream in wasm-semantics as of v0.1.157. Still to do: the general case (arbitrary value), a lemma test, and offering it upstream |
+| 4.4 | Accept the Wasm that current Rust compilers produce. (a) The old Wasm parser rejected the DataCount section (id 12). **Fixed** by the upgrade of step 3.1: wasm-semantics has its own parser now, and the workaround that stripped the section is removed. (b) Sign-extension operators (`i32.extend8_s` and friends, on by default since Rust 1.82) had no lemmas, so `#extends` on a symbolic value ended in a spurious `trap`. **Fixed** for values within the signed range of the source width in `lemmas/sign-extension-lemmas.md`; not fixed upstream in wasm-semantics as of v0.1.157. Still to do: the general case (arbitrary value), a lemma test, and offering it upstream |
 | 4.5 | ESDT system contract: keep the compiled `.wasm` checked in; build its source against crates.io |
 | 4.6 | Scenario conformance suite: run from `mx-sdk-rs` CI against a released image of this repository |
 | 4.7 | Framework side: add `setESDTRole` and `checkESDTRole` to the test API; replace `ei = "ignore"` with a proper option; remove legacy `foundry.json` files |

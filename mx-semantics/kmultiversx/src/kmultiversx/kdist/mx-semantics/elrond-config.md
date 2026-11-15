@@ -694,8 +694,11 @@ TODO: Implement [reserved keys and read-only runtimes](https://github.com/Elrond
       requires isBuiltin(FUNC)
       [priority(60)]
 
+    // FUNCNAME is deliberately a WasmStringToken here, not a WasmString: with
+    // the wider sort, the booster backend of K 7.1.337 crashes when it tries
+    // this rule ("Unexpected sort injection").
     rule [callContractAux-err-callback]:
-        <commands> callContractAux(_, _, FUNCNAME:WasmString, _)
+        <commands> callContractAux(_, _, FUNCNAME:WasmStringToken, _)
                 => #exception(ExecutionFailed, b"invalid function (calling callBack() directly is forbidden)") ...
         </commands>
        <instrs> .K </instrs>
@@ -768,7 +771,7 @@ Initialize the call state and invoke the endpoint function:
             <instrs> .K => ( invoke FUNCADDRS {{ FUNCIDX }} orDefault -1 ) </instrs>
             <moduleInst>
               <modIdx> MODIDX </modIdx>
-              <exports> ... FUNCNAME |-> FUNCIDX:Int </exports>
+              <exports> ... FUNCNAME |-> #externIdxFunc(FUNCIDX:Int) </exports>
               <funcAddrs> FUNCADDRS </funcAddrs>
               ...
             </moduleInst>

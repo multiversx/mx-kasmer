@@ -8,9 +8,6 @@ RUN="$ROOT/$1"
 EXP="$ROOT/scripts/experiments"
 cd "$RUN"
 
-echo ">> stripping DataCount sections"
-python3 "$EXP/strip_datacount.py" test/output/*.wasm contracts/*.wasm
-
 echo ">> fuzzing (concrete, LLVM backend)"
 status=0
 python3 "$EXP/fuzz_pt.py" test contracts/*.wasm > fuzz.log 2>&1 || status=1

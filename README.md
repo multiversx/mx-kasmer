@@ -71,7 +71,8 @@ exists for amd64 only, so on Apple Silicon everything runs emulated.
 
 ```sh
 # 1. Build: installs the Python tooling and compiles the K definitions.
-#    First run: about 30 minutes emulated on Apple Silicon. Re-runs only rebuild what changed.
+#    First run: about 80 minutes emulated on Apple Silicon with 24 GB (definitions are compiled
+#    one at a time below 30 GB, two at a time above). Re-runs only rebuild what changed.
 scripts/build.sh
 
 # 2. Test (about 7 minutes).
@@ -97,6 +98,7 @@ effect on the next `build.sh` or `test.sh`.
 | `scripts/shell.sh` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
 | `scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
 | `scripts/update-wasm-semantics.sh <version>` | Replace the vendored Wasm semantics with another upstream release |
+| `scripts/migrations/` | One-off conversions of checked-in K terms (JSON) for an upgrade of the semantics. Kept as a record and as a template for the next upgrade |
 
 ### Trying a parametric test from mx-sdk-rs
 
@@ -164,8 +166,8 @@ definitions whose sources changed are then rebuilt.
 
 | Dependency | Now | At import |
 |---|---|---|
-| K Framework | 7.1.140 (`deps/k_release`) | 7.1.140 for `mx-semantics`, 7.1.85 for `kasmer-multiversx` |
-| [wasm-semantics](https://github.com/runtimeverification/wasm-semantics) | 0.1.106, vendored (`deps/kwasm_release`) | 0.1.106, through the `pykwasm` Python package |
+| K Framework | 7.1.337 (`deps/k_release`) | 7.1.140 for `mx-semantics`, 7.1.85 for `kasmer-multiversx` |
+| [wasm-semantics](https://github.com/runtimeverification/wasm-semantics) | 0.1.157, vendored (`deps/kwasm_release`) | 0.1.106, through the `pykwasm` Python package |
 | `mx-semantics`, as used by `kasmer-multiversx` | the copy in this repository (0.1.119) | 0.1.107, fetched by git tag from the original repository |
 | blockchain-k-plugin (crypto hooks, C++) | not used; replaced by `krypto/` in this repository | commit `c9264b2`, a git submodule |
 
@@ -177,10 +179,10 @@ Done:
 2. Make `kasmer-multiversx` use the in-repository `mx-semantics`, with a single K version.
 3. Bring the remaining external K sources into the repository (Wasm semantics, crypto hooks).
    No git submodules.
+4. Upgrade to current releases of the K Framework (7.1.337) and the Wasm semantics (0.1.157).
 
 To do:
 
-4. Upgrade to a current K Framework release.
 5. Remove the dependency on building contracts: the tool takes compiled `.wasm` as input.
 6. Replace the Python tooling with a Rust command line tool.
 7. Distribute prebuilt artifacts, so that users need neither Java, Haskell nor Python.

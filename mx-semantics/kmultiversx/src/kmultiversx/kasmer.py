@@ -14,10 +14,10 @@ from pyk.konvert._kast_to_kore import _kvariable_to_kore
 from pyk.kore.parser import KoreParser
 from pyk.kore.syntax import App
 from pyk.ktool.kfuzz import KFuzz
-from pyk.prelude.collections import list_of, map_of, set_of
-from pyk.prelude.kint import leInt
-from pyk.prelude.ml import mlEqualsTrue
-from pyk.prelude.utils import token
+from pyk.kast.prelude.collections import list_of, map_of, set_of
+from pyk.kast.prelude.kint import leInt
+from pyk.kast.prelude.ml import mlEqualsTrue
+from pyk.kast.prelude.utils import token
 from pyk.utils import ensure_dir_path
 from pykwasm.kwasm_ast import KInt
 
