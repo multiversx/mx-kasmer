@@ -4,11 +4,11 @@ from typing import Final
 import pytest
 from pyk.kast.inner import KApply, KInner, KRewrite, KSequence, KVariable
 from pyk.kast.outer import KClaim
-from pyk.prelude.bytes import bytesToken
-from pyk.prelude.collections import list_empty, map_empty, map_of, set_empty
-from pyk.prelude.kbool import FALSE, TRUE
-from pyk.prelude.kint import intToken
-from pyk.prelude.string import stringToken
+from pyk.kast.prelude.bytes import bytesToken
+from pyk.kast.prelude.collections import list_empty, map_empty, map_of, set_empty
+from pyk.kast.prelude.kbool import FALSE, TRUE
+from pyk.kast.prelude.kint import intToken
+from pyk.kast.prelude.string import stringToken
 
 from kmxwasm.ast.configuration import wrap_with_generated_top_if_needed
 from kmxwasm.ast.mx import accountCellMap, bytesStack, directCall, listAsyncCall, listBytes

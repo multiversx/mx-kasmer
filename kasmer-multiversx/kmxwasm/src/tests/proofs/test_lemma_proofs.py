@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from pyk.kast.manip import is_top
-from pyk.prelude.ml import mlOr
+from pyk.kast.prelude.ml import mlOr
 
 from kmxwasm.testing.fixtures import Tools
 
@@ -11,7 +11,9 @@ def is_known_broken(path: Path) -> bool:
     return path.name in ['mod-int-total.k', 'helper-lemmas.k']
 
 
-K_SRC_DIR = Path(__file__).parent.parent.parent.parent / 'k-src'
+# The K sources moved under the kdist package; this used to point at a 'k-src'
+# directory that no longer exists, which silently skipped every proof.
+K_SRC_DIR = Path(__file__).parent.parent.parent / 'kmxwasm' / 'kdist' / 'mxwasm-semantics'
 LEMMA_PROOFS_DIR = K_SRC_DIR / 'lemmas' / 'proofs'
 PROVE_FILES = tuple(LEMMA_PROOFS_DIR.rglob('*.k'))
 PROVE_TEST_DATA = tuple(

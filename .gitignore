@@ -1,0 +1,26 @@
+.DS_Store
+
+# scratch directories of scripts/experiments/run-pt.sh
+/.pt-runs/
+
+__pycache__/
+.pytest_cache/
+.hypothesis/
+.property/
+
+# written by kprove next to each lemma test
+*.debug-log
+
+# temporary files of the K tools
+.kompile*
+.kprove*
+.krun*
+.kore-repl-*
+
+# Python
+*.pyc
+/dist/
+.coverage
+
+# build cache directory used by CI (KASMER_CACHE)
+/.kasmer-cache/

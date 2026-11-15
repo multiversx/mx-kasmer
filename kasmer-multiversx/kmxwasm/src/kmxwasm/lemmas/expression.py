@@ -1,7 +1,7 @@
 from typing import Iterable
 
 from pyk.kast.inner import KApply, KInner, KSequence, KSort, KToken, KVariable
-from pyk.prelude.kint import intToken
+from pyk.kast.prelude.kint import intToken
 
 from ..ast.collections import simple_list
 

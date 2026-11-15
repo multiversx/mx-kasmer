@@ -1,6 +1,6 @@
 ```k
 requires "../ceils-syntax.k"
-requires "wasm-semantics/data.md"
+requires "wasm-semantics/wasm-data.md"
 
 module INT-ENCODING-BASIC
   imports INT
