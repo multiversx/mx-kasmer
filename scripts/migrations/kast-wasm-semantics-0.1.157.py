@@ -20,6 +20,9 @@ recovered from the name, which is sound for modules produced by the Rust
 compiler: `memory` is the memory, `__data_end` and `__heap_base` are globals,
 everything else is a function.
 
+Along with it, the files move to version 4 of the KAST JSON format used by
+K 7.1.337, in which every sort carries a (here always empty) parameter list.
+
 Usage: kast-wasm-semantics-0.1.157.py FILE.json...   (rewrites in place)
 """
 
@@ -75,6 +78,9 @@ def migrate(term):
         return
     for value in term.values():
         migrate(value)
+    if term.get('node') == 'KSort' and 'params' not in term:
+        term['params'] = []
+        stats['KSort'] += 1
     if term.get('node') != 'KApply':
         return
     label = term['label']['name']
@@ -102,6 +108,8 @@ def main():
         with open(path) as f:
             data = json.load(f)
         migrate(data)
+        if data.get('format') == 'KAST' and data.get('version') == 3:
+            data['version'] = 4
         with open(path, 'w') as f:
             json.dump(data, f, sort_keys=True)
         print(path, dict(sorted(stats.items())))

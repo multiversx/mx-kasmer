@@ -40,10 +40,13 @@ case "${1:-}" in
 esac
 
 echo ">> compiling: ${TARGETS[*]}"
-# Each kompile can use more than 8 GB: two at a time only with memory to spare.
+# One at a time unless there is plenty of memory: compiling a large LLVM
+# definition peaks well above 8 GB, and two of them together have been killed
+# for lack of memory on a 24 GB machine. (When that happens, kdist also reports
+# misleading "getcwd" and "Java 17" errors for the targets that follow.)
 MEM_GB=$(awk '/^MemTotal:/ { print int($2 / 1024 / 1024) }' /proc/meminfo)
 JOBS=1
-[ "$MEM_GB" -ge 20 ] && JOBS=2
+[ "$MEM_GB" -ge 30 ] && JOBS=2
 echo ">> ${MEM_GB} GB of memory, building $JOBS at a time"
 time kdist -v build "${TARGETS[@]}" -j"$JOBS"
 echo ">> build done"
