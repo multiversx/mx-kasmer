@@ -4,8 +4,6 @@ Throwaway scripts used to try contracts from `mx-sdk-rs` against the imported Py
 without going through `kasmer build` (which calls `sc-meta`). They run inside the dev container,
 in the Poetry environment of `kmultiversx` or `kmxwasm`.
 
-- `strip_datacount.py FILE.wasm...` removes the DataCount section in place, which the old Wasm
-  parser rejects.
 - `fuzz_pt.py TEST_DIR CONTRACT.wasm...` deploys the test contract found in `TEST_DIR/output` and
   fuzzes every `test_*` endpoint. Needs `mx-semantics.llvm-kasmer`.
 - `gen_claims_pt.py TEST_DIR CONTRACT.wasm...` writes `TEST_DIR/generated_claims/*-spec.json`,
