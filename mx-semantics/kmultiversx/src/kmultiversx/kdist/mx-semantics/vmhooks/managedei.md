@@ -393,5 +393,37 @@ module MANAGEDEI
                      +Int #if ESDTRoleNFTAddQuantity in S #then 8 #else 0 #fi
                      +Int #if ESDTRoleNFTBurn        in S #then 16 #else 0 #fi
 
+ // extern void      managedGetAllTransfersCallValue(void* context, int32_t resultHandle);
+ // All transfers of the call: the ESDT transfers, or the EGLD payment as a single transfer
+    rule <instrs> hostCall ( "env" , "managedGetAllTransfersCallValue" , [ i32  .ValTypes ] -> [ .ValTypes ] )
+               => #writeEsdtsToBytes(ESDTS)
+               ~> #setBufferFromBytesStack(DEST_IDX)
+               ~> #dropBytes
+                  ...
+         </instrs>
+         <locals>  0 |-> <i32> DEST_IDX  </locals>
+         <esdtTransfers> ESDTS </esdtTransfers>
+      requires size(ESDTS) >Int 0
+
+    rule <instrs> hostCall ( "env" , "managedGetAllTransfersCallValue" , [ i32  .ValTypes ] -> [ .ValTypes ] )
+               => #writeEsdtsToBytes(ListItem(esdtTransfer(b"EGLD-000000", EGLD, 0)))
+               ~> #setBufferFromBytesStack(DEST_IDX)
+               ~> #dropBytes
+                  ...
+         </instrs>
+         <locals>  0 |-> <i32> DEST_IDX  </locals>
+         <esdtTransfers> .List </esdtTransfers>
+         <callValue> EGLD </callValue>
+      requires EGLD >Int 0
+
+    rule <instrs> hostCall ( "env" , "managedGetAllTransfersCallValue" , [ i32  .ValTypes ] -> [ .ValTypes ] )
+               => #setBuffer(DEST_IDX, .Bytes)
+                  ...
+         </instrs>
+         <locals>  0 |-> <i32> DEST_IDX  </locals>
+         <esdtTransfers> .List </esdtTransfers>
+         <callValue> EGLD </callValue>
+      requires EGLD <=Int 0
+
 endmodule
 ```

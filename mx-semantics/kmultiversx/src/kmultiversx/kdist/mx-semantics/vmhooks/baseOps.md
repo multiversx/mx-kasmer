@@ -586,5 +586,14 @@ If the result is a failure; `resolveErrorFromOutput` throws a new exception.
                     ) ) ) ...
         </commands>
 
+    // The timestamps in milliseconds are derived from the ones in seconds.
+    // extern long long getBlockTimestampMs(void *context);
+    rule <instrs> hostCall("env", "getBlockTimestampMs", [ .ValTypes ] -> [ i64 .ValTypes ]) => i64.const TIMESTAMP *Int 1000 ... </instrs>
+         <curBlockTimestamp> TIMESTAMP </curBlockTimestamp>
+
+    // extern long long getPrevBlockTimestampMs(void *context);
+    rule <instrs> hostCall("env", "getPrevBlockTimestampMs", [ .ValTypes ] -> [ i64 .ValTypes ]) => i64.const TIMESTAMP *Int 1000 ... </instrs>
+         <prevBlockTimestamp> TIMESTAMP </prevBlockTimestamp>
+
 endmodule
 ```

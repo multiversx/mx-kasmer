@@ -319,5 +319,124 @@ module MANBUFOPS
          <bytesStack> BS : _ </bytesStack>
          requires notBool( #sliceBytesInBounds( BS , OFFSET , LENGTH ) )
 
+ // Small integers in managed buffers: the buffer holds the big endian bytes of the number.
+ // A value that does not fit in 64 bits makes the conversion to a small integer fail.
+
+ // extern long long mBufferToSmallIntUnsigned(void* context, int32_t mBufferHandle);
+    rule [mBufferToSmallIntUnsigned]:
+        <instrs> hostCall("env", "mBufferToSmallIntUnsigned", [ i32 .ValTypes ] -> [ i64 .ValTypes ] )
+              => i64 . const Bytes2Int(BS, BE, Unsigned) ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX </locals>
+        <bufferHeap> ... BUFF_IDX |-> BS:Bytes ... </bufferHeap>
+      requires Bytes2Int(BS, BE, Unsigned) <Int #pow(i64)
+
+    rule [mBufferToSmallIntUnsigned-fail]:
+        <instrs> hostCall("env", "mBufferToSmallIntUnsigned", [ i32 .ValTypes ] -> [ i64 .ValTypes ] )
+              => #throwException(ExecutionFailed, "managed buffer does not hold a valid small integer") ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX </locals>
+        <bufferHeap> ... BUFF_IDX |-> BS:Bytes ... </bufferHeap>
+      requires Bytes2Int(BS, BE, Unsigned) >=Int #pow(i64)
+
+ // extern long long mBufferToSmallIntSigned(void* context, int32_t mBufferHandle);
+    rule [mBufferToSmallIntSigned]:
+        <instrs> hostCall("env", "mBufferToSmallIntSigned", [ i32 .ValTypes ] -> [ i64 .ValTypes ] )
+              => i64 . const Bytes2Int(BS, BE, Signed) modInt #pow(i64) ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX </locals>
+        <bufferHeap> ... BUFF_IDX |-> BS:Bytes ... </bufferHeap>
+      requires #pow1(i64) *Int (-1) <=Int Bytes2Int(BS, BE, Signed)
+       andBool Bytes2Int(BS, BE, Signed) <Int #pow1(i64)
+
+    rule [mBufferToSmallIntSigned-fail]:
+        <instrs> hostCall("env", "mBufferToSmallIntSigned", [ i32 .ValTypes ] -> [ i64 .ValTypes ] )
+              => #throwException(ExecutionFailed, "managed buffer does not hold a valid small integer") ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX </locals>
+        <bufferHeap> ... BUFF_IDX |-> BS:Bytes ... </bufferHeap>
+      requires Bytes2Int(BS, BE, Signed) <Int #pow1(i64) *Int (-1)
+        orBool #pow1(i64) <=Int Bytes2Int(BS, BE, Signed)
+
+    rule [mBufferToSmallIntUnsigned-invalid-handle]:
+        <instrs> hostCall("env", "mBufferToSmallIntUnsigned", [ i32 .ValTypes ] -> [ i64 .ValTypes ] )
+              => #throwException(ExecutionFailed, "no managed buffer under the given handle") ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX </locals>
+        <bufferHeap> HEAP </bufferHeap>
+      requires notBool #validBufferId(BUFF_IDX, HEAP)
+        orBool notBool isBytes(HEAP[BUFF_IDX] orDefault .Bytes)
+
+    rule [mBufferToSmallIntSigned-invalid-handle]:
+        <instrs> hostCall("env", "mBufferToSmallIntSigned", [ i32 .ValTypes ] -> [ i64 .ValTypes ] )
+              => #throwException(ExecutionFailed, "no managed buffer under the given handle") ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX </locals>
+        <bufferHeap> HEAP </bufferHeap>
+      requires notBool #validBufferId(BUFF_IDX, HEAP)
+        orBool notBool isBytes(HEAP[BUFF_IDX] orDefault .Bytes)
+
+ // extern void mBufferFromSmallIntUnsigned(void* context, int32_t mBufferHandle, long long value);
+    rule [mBufferFromSmallIntUnsigned]:
+        <instrs> hostCall("env", "mBufferFromSmallIntUnsigned", [ i32 i64 .ValTypes ] -> [ .ValTypes ] )
+              => #setBuffer(BUFF_IDX, Int2Bytes(VALUE, BE, Unsigned)) ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX  1 |-> <i64> VALUE </locals>
+
+ // extern void mBufferFromSmallIntSigned(void* context, int32_t mBufferHandle, long long value);
+    rule [mBufferFromSmallIntSigned]:
+        <instrs> hostCall("env", "mBufferFromSmallIntSigned", [ i32 i64 .ValTypes ] -> [ .ValTypes ] )
+              => #setBuffer(BUFF_IDX, Int2Bytes(#signed(i64, VALUE), BE, Signed)) ...
+        </instrs>
+        <locals> 0 |-> <i32> BUFF_IDX  1 |-> <i64> VALUE </locals>
+
+ // extern int32_t mBufferSetByteSlice(void* context, int32_t mBufferHandle, int32_t startingPosition, int32_t dataLength, void* dataOffset);
+ // Overwrites part of the buffer with bytes from memory. Returns 1 if the slice is out of range, 0 otherwise.
+    rule <instrs> hostCall("env", "mBufferSetByteSlice", [ i32 i32 i32 i32 .ValTypes ] -> [ i32 .ValTypes ] )
+               => #getBuffer( BUFF_IDX )
+               ~> #memLoad( DATA_OFFSET , LENGTH )
+               ~> #mBufferSetByteSliceH( BUFF_IDX , START , LENGTH )
+                  ...
+         </instrs>
+         <locals> 0 |-> <i32> BUFF_IDX  1 |-> <i32> START  2 |-> <i32> LENGTH  3 |-> <i32> DATA_OFFSET </locals>
+
+    syntax InternalInstr ::= #mBufferSetByteSliceH( Int , Int , Int )
+ // -----------------------------------------------------------------
+    rule <instrs> #mBufferSetByteSliceH( BUFF_IDX , START , LENGTH )
+               => #setBuffer( BUFF_IDX , replaceAtBytes( BUF , START , DATA ) )
+               ~> #dropBytes
+               ~> #dropBytes
+               ~> i32 . const 0
+                  ...
+         </instrs>
+         <bytesStack> DATA : BUF : _ </bytesStack>
+      requires START +Int LENGTH <=Int lengthBytes(BUF)
+
+    rule <instrs> #mBufferSetByteSliceH( _BUFF_IDX , START , LENGTH )
+               => #dropBytes
+               ~> #dropBytes
+               ~> i32 . const 1
+                  ...
+         </instrs>
+         <bytesStack> _DATA : BUF : _ </bytesStack>
+      requires START +Int LENGTH >Int lengthBytes(BUF)
+
+ // extern void bigIntToString(void* context, int32_t bigIntHandle, int32_t destinationHandle);
+    rule [bigIntToString]:
+        <instrs> hostCall ( "env" , "bigIntToString" , [ i32  i32  .ValTypes ] -> [ .ValTypes ] )
+              => #setBuffer(DEST, String2Bytes(Int2String(V))) ...
+        </instrs>
+        <locals> 0 |-> <i32> IDX  1 |-> <i32> DEST </locals>
+        <bigIntHeap> ... IDX |-> V:Int ... </bigIntHeap>
+
+    rule [bigIntToString-invalid-handle]:
+        <instrs> hostCall ( "env" , "bigIntToString" , [ i32  i32  .ValTypes ] -> [ .ValTypes ] )
+              => #throwException(ExecutionFailed, "no bigInt under the given handle") ...
+        </instrs>
+        <locals> 0 |-> <i32> IDX  1 |-> <i32> _DEST </locals>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires notBool (IDX in_keys(HEAP))
+        orBool notBool isInt(HEAP[IDX] orDefault 0)
+
 endmodule
 ```
