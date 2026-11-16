@@ -20,9 +20,9 @@ TEST_DIR=$(cd "$1" && pwd); shift
 NAME=$(basename "$TEST_DIR")
 RUN="$ROOT/.pt-runs/$NAME"
 rm -rf "$RUN"
-mkdir -p "$RUN/test/output" "$RUN/contracts"
+mkdir -p "$RUN/test/output" "$RUN/contracts/output"
 cp "$TEST_DIR"/output/*.wasm "$TEST_DIR"/output/*.abi.json "$RUN/test/output/"
-for w in "$@"; do cp "$w" "$RUN/contracts/"; done
+for w in "$@"; do cp "$w" "$RUN/contracts/output/"; done
 # `kasmer verify` insists on a kasmer.json listing existing contract directories.
 echo '{"contracts": ["../contracts"]}' > "$RUN/test/kasmer.json"
 

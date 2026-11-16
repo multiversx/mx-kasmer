@@ -112,7 +112,9 @@ scripts/experiments/run-pt.sh \
 
 This copies the `.wasm` and ABI files to `.pt-runs/adder-pt/`, fuzzes every `test_*` endpoint,
 generates the claims and verifies each one. Verification logs are written next to the copies.
-It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
+It is a stopgap around `kasmer claims`, which does the same from a `kasmer.json` project directory
+without compiling anything. Build the contracts first, with
+`sc-meta all build --wasm-symbols --no-wasm-opt`.
 
 The companion `adder-pt-fail` contains tests that are expected to fail and is the check that
 failures are actually reported: one test fails under fuzzing and verification, another fails for

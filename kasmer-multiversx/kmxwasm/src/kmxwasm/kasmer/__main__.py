@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import pyk
 from pyk.utils import check_dir_path
 
-from .build import kasmer_build
+from .claims import kasmer_claims
 from .fuzz import kasmer_fuzz
 from .utils import load_project
 from .verify import kasmer_verify
@@ -33,7 +33,7 @@ class KasmerOpts:
         self.project_dir = project_dir.resolve()
 
 
-class BuildOpts(KasmerOpts): ...
+class ClaimsOpts(KasmerOpts): ...
 
 
 class FuzzOpts(KasmerOpts): ...
@@ -60,8 +60,8 @@ def kasmer(args: Sequence[str]) -> None:
 
     opts = _parse_args(args)
     match opts:
-        case BuildOpts():
-            return _kasmer_build(opts)
+        case ClaimsOpts():
+            return _kasmer_claims(opts)
         case FuzzOpts():
             return _kasmer_fuzz(opts)
         case VerifyOpts():
@@ -75,9 +75,9 @@ def kasmer(args: Sequence[str]) -> None:
 # --------
 
 
-def _kasmer_build(opts: BuildOpts) -> None:
+def _kasmer_claims(opts: ClaimsOpts) -> None:
     project = load_project(opts.project_dir)
-    kasmer_build(project)
+    kasmer_claims(project)
 
 
 def _kasmer_fuzz(opts: FuzzOpts) -> None:
@@ -109,8 +109,8 @@ def _parse_args(args: Sequence[str]) -> KasmerOpts:
     project_dir = Path(ns.directory)
 
     match ns.command:
-        case 'build':
-            return BuildOpts(project_dir=project_dir)
+        case 'claims':
+            return ClaimsOpts(project_dir=project_dir)
         case 'fuzz':
             return FuzzOpts(project_dir=project_dir)
         case 'verify':
@@ -133,7 +133,10 @@ def _arg_parser() -> ArgumentParser:
 
     command_parser = parser.add_subparsers(dest='command', required=True)
 
-    command_parser.add_parser('build', help='build main and test contracts, and generate claims')
+    command_parser.add_parser(
+        'claims',
+        help='generate claims from the compiled test contract and contracts under test (does not compile anything)',
+    )
     command_parser.add_parser('fuzz', help='fuzz test contract')
 
     verify_parser = command_parser.add_parser('verify', help='verify test contract')

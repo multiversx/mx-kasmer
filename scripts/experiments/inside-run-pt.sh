@@ -10,12 +10,12 @@ cd "$RUN"
 
 echo ">> fuzzing (concrete, LLVM backend)"
 status=0
-python3 "$EXP/fuzz_pt.py" test contracts/*.wasm > fuzz.log 2>&1 || status=1
+python3 "$EXP/fuzz_pt.py" test contracts/output/*.wasm > fuzz.log 2>&1 || status=1
 grep -E "^(deploy|Testing|Passed|FAILED|fuzzing:)" fuzz.log || true
 echo "   full log: .pt-runs/$(basename "$RUN")/fuzz.log"
 
 echo ">> generating claims"
-python3 "$EXP/gen_claims_pt.py" test contracts/*.wasm 2>&1 | grep -vE '^INFO|pyk\.'
+kasmer -C test claims 2>&1 | grep -vE 'pyk\.'
 
 cd test
 for claim in generated_claims/*-spec.json; do
