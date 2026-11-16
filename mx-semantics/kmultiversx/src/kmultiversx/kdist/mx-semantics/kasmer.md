@@ -439,6 +439,8 @@ Only the `#kasmerRunner` account can execute these commands/host functions.
     rule updateSet(S, I, true) => S |Set SetItem(I)
     rule updateSet(S, I, false) => S -Set SetItem(I)
 
+    // The numbers are those of `EsdtLocalRole::as_u16` in the Rust framework.
+    // Roles the model does not know about (NFT recreate, modify creator, ...) become `None`.
     syntax ESDTLocalRole ::= Int2ESDTRole(Int)   [function, total]
  // -------------------------------------------------------
     rule Int2ESDTRole(1) => ESDTRoleLocalMint
@@ -446,9 +448,9 @@ Only the `#kasmerRunner` account can execute these commands/host functions.
     rule Int2ESDTRole(3) => ESDTRoleNFTCreate
     rule Int2ESDTRole(4) => ESDTRoleNFTAddQuantity
     rule Int2ESDTRole(5) => ESDTRoleNFTBurn
-    rule Int2ESDTRole(6) => ESDTRoleNFTAddURI
-    rule Int2ESDTRole(7) => ESDTRoleNFTUpdateAttributes
-    rule Int2ESDTRole(8) => ESDTTransferRole
+    rule Int2ESDTRole(6) => ESDTRoleNFTUpdateAttributes
+    rule Int2ESDTRole(7) => ESDTRoleNFTAddURI
+    rule Int2ESDTRole(12) => ESDTTransferRole
     rule Int2ESDTRole(_) => None      [owise]
 
     rule [testapi-checkESDTRole]:

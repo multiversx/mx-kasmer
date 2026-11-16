@@ -96,7 +96,8 @@ effect on the next `build.sh` or `test.sh`.
 | `scripts/test.sh symbolic -k call_add` | For a single suite, extra arguments go to `pytest` |
 | `scripts/build.sh mxwasm-semantics.haskell` | Build selected targets only. After changing a lemma, this one target is enough and takes about 2 minutes |
 | `scripts/shell.sh` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
-| `scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+| `scripts/experiments/run-pt.sh <test-contract-dir> [<contract.wasm>...]` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+| `scripts/conformance.sh <mx-sdk-rs-dir> [list...]` | Run the scenarios of an `mx-sdk-rs` checkout on the VM model; one line per failure, with what it is stuck on |
 | `scripts/update-wasm-semantics.sh <version>` | Replace the vendored Wasm semantics with another upstream release |
 | `scripts/migrations/` | One-off conversions of checked-in K terms (JSON) for an upgrade of the semantics. Kept as a record and as a template for the next upgrade |
 
@@ -112,7 +113,9 @@ scripts/experiments/run-pt.sh \
 
 This copies the `.wasm` and ABI files to `.pt-runs/adder-pt/`, fuzzes every `test_*` endpoint,
 generates the claims and verifies each one. Verification logs are written next to the copies.
-It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
+It is a stopgap around `kasmer claims`, which does the same from a `kasmer.json` project directory
+without compiling anything. Build the contracts first, with
+`sc-meta all build --wasm-symbols --no-wasm-opt`.
 
 The companion `adder-pt-fail` contains tests that are expected to fail and is the check that
 failures are actually reported: one test fails under fuzzing and verification, another fails for

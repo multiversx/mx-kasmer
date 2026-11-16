@@ -628,5 +628,138 @@ module BIGINTOPS
         <bigIntHeap> ... IDX |-> V ... </bigIntHeap>
 
 
+
+    // Bitwise operations, shifts, powers, truncated remainder, logarithm and decimal printing.
+    // The operands follow Go's big.Int: bitwise operations act as on two's complement numbers of
+    // unbounded width, Rsh is an arithmetic shift, Rem truncates towards zero.
+
+    syntax BigIntBinOp ::= "bigAnd" | "bigOr" | "bigXor" | "bigTMod" | "bigPow"
+    syntax Int ::= #applyBigIntBinOp(BigIntBinOp, Int, Int)    [function]
+ // --------------------------------------------------------------------
+    rule #applyBigIntBinOp(bigAnd,  X, Y) => X &Int Y
+    rule #applyBigIntBinOp(bigOr,   X, Y) => X |Int Y
+    rule #applyBigIntBinOp(bigXor,  X, Y) => X xorInt Y
+    rule #applyBigIntBinOp(bigTMod, X, Y) => X %Int Y     requires Y =/=Int 0
+    rule #applyBigIntBinOp(bigPow,  X, Y) => X ^Int Y     requires Y >=Int 0
+
+    syntax Bool ::= #bigIntBinOpDefined(BigIntBinOp, Int)   [function, total]
+ // ----------------------------------------------------------------
+    rule #bigIntBinOpDefined(bigTMod, Y) => Y =/=Int 0
+    rule #bigIntBinOpDefined(bigPow,  Y) => Y >=Int 0
+    rule #bigIntBinOpDefined(_OP,    _Y) => true   [owise]
+
+    syntax InternalInstr ::= #bigIntBinOp(BigIntBinOp, Int, Int, Int)
+ // ------------------------------------------------------------------
+    rule [bigIntBinOp]:
+        <instrs> #bigIntBinOp(OP, DEST, X_IDX, Y_IDX)
+              => #setBigIntValue(DEST, #applyBigIntBinOp(OP, {HEAP[X_IDX] orDefault 0}:>Int, {HEAP[Y_IDX] orDefault 0}:>Int))
+                 ...
+        </instrs>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires X_IDX in_keys(HEAP)
+       andBool Y_IDX in_keys(HEAP)
+       andBool isInt(HEAP[X_IDX] orDefault 0)
+       andBool isInt(HEAP[Y_IDX] orDefault 0)
+       andBool #bigIntBinOpDefined(OP, {HEAP[Y_IDX] orDefault 0}:>Int)
+      [preserves-definedness]
+
+    rule [bigIntBinOp-invalid-operation]:
+        <instrs> #bigIntBinOp(OP, _DEST, X_IDX, Y_IDX)
+              => #throwException(ExecutionFailed, "invalid big int operation") ...
+        </instrs>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires X_IDX in_keys(HEAP)
+       andBool Y_IDX in_keys(HEAP)
+       andBool isInt(HEAP[X_IDX] orDefault 0)
+       andBool isInt(HEAP[Y_IDX] orDefault 0)
+       andBool notBool #bigIntBinOpDefined(OP, {HEAP[Y_IDX] orDefault 0}:>Int)
+
+    rule [bigIntBinOp-invalid-handle]:
+        <instrs> #bigIntBinOp(_OP, _DEST, X_IDX, Y_IDX)
+              => #throwException(ExecutionFailed, "no bigInt under the given handle") ...
+        </instrs>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires notBool (X_IDX in_keys(HEAP))
+        orBool notBool (Y_IDX in_keys(HEAP))
+        orBool notBool isInt(HEAP[X_IDX] orDefault 0)
+        orBool notBool isInt(HEAP[Y_IDX] orDefault 0)
+
+ // extern void bigIntAnd(void* context, int32_t destinationHandle, int32_t op1Handle, int32_t op2Handle);
+    rule <instrs> hostCall ( "env" , "bigIntAnd" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+               => #bigIntBinOp(bigAnd, DEST, X_IDX, Y_IDX) ... </instrs>
+         <locals> 0 |-> <i32> DEST  1 |-> <i32> X_IDX  2 |-> <i32> Y_IDX </locals>
+
+ // extern void bigIntOr(void* context, int32_t destinationHandle, int32_t op1Handle, int32_t op2Handle);
+    rule <instrs> hostCall ( "env" , "bigIntOr" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+               => #bigIntBinOp(bigOr, DEST, X_IDX, Y_IDX) ... </instrs>
+         <locals> 0 |-> <i32> DEST  1 |-> <i32> X_IDX  2 |-> <i32> Y_IDX </locals>
+
+ // extern void bigIntXor(void* context, int32_t destinationHandle, int32_t op1Handle, int32_t op2Handle);
+    rule <instrs> hostCall ( "env" , "bigIntXor" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+               => #bigIntBinOp(bigXor, DEST, X_IDX, Y_IDX) ... </instrs>
+         <locals> 0 |-> <i32> DEST  1 |-> <i32> X_IDX  2 |-> <i32> Y_IDX </locals>
+
+ // extern void bigIntTMod(void* context, int32_t destinationHandle, int32_t op1Handle, int32_t op2Handle);
+    rule <instrs> hostCall ( "env" , "bigIntTMod" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+               => #bigIntBinOp(bigTMod, DEST, X_IDX, Y_IDX) ... </instrs>
+         <locals> 0 |-> <i32> DEST  1 |-> <i32> X_IDX  2 |-> <i32> Y_IDX </locals>
+
+ // extern void bigIntPow(void* context, int32_t destinationHandle, int32_t op1Handle, int32_t op2Handle);
+    rule <instrs> hostCall ( "env" , "bigIntPow" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+               => #bigIntBinOp(bigPow, DEST, X_IDX, Y_IDX) ... </instrs>
+         <locals> 0 |-> <i32> DEST  1 |-> <i32> X_IDX  2 |-> <i32> Y_IDX </locals>
+
+ // extern void bigIntShl(void* context, int32_t destinationHandle, int32_t opHandle, int32_t bits);
+    rule [bigIntShl]:
+        <instrs> hostCall ( "env" , "bigIntShl" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+              => #setBigIntValue(DEST, V <<Int BITS) ...
+        </instrs>
+        <locals> 0 |-> <i32> DEST  1 |-> <i32> IDX  2 |-> <i32> BITS </locals>
+        <bigIntHeap> ... IDX |-> V:Int ... </bigIntHeap>
+
+ // extern void bigIntShr(void* context, int32_t destinationHandle, int32_t opHandle, int32_t bits);
+    rule [bigIntShr]:
+        <instrs> hostCall ( "env" , "bigIntShr" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+              => #setBigIntValue(DEST, V >>Int BITS) ...
+        </instrs>
+        <locals> 0 |-> <i32> DEST  1 |-> <i32> IDX  2 |-> <i32> BITS </locals>
+        <bigIntHeap> ... IDX |-> V:Int ... </bigIntHeap>
+
+    rule [bigIntShl-invalid-handle]:
+        <instrs> hostCall ( "env" , "bigIntShl" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+              => #throwException(ExecutionFailed, "no bigInt under the given handle") ...
+        </instrs>
+        <locals> 0 |-> <i32> _DEST  1 |-> <i32> IDX  2 |-> <i32> _BITS </locals>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires notBool (IDX in_keys(HEAP))
+        orBool notBool isInt(HEAP[IDX] orDefault 0)
+
+    rule [bigIntShr-invalid-handle]:
+        <instrs> hostCall ( "env" , "bigIntShr" , [ i32  i32  i32  .ValTypes ] -> [ .ValTypes ] )
+              => #throwException(ExecutionFailed, "no bigInt under the given handle") ...
+        </instrs>
+        <locals> 0 |-> <i32> _DEST  1 |-> <i32> IDX  2 |-> <i32> _BITS </locals>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires notBool (IDX in_keys(HEAP))
+        orBool notBool isInt(HEAP[IDX] orDefault 0)
+
+ // extern int32_t bigIntLog2(void* context, int32_t op1Handle);
+ // -1 for values that are not positive
+    rule [bigIntLog2]:
+        <instrs> hostCall ( "env" , "bigIntLog2" , [ i32  .ValTypes ] -> [ i32  .ValTypes ] )
+              => i32 . const #if V >Int 0 #then log2Int(V) #else #pow(i32) -Int 1 #fi ...
+        </instrs>
+        <locals> 0 |-> <i32> IDX </locals>
+        <bigIntHeap> ... IDX |-> V:Int ... </bigIntHeap>
+
+    rule [bigIntLog2-invalid-handle]:
+        <instrs> hostCall ( "env" , "bigIntLog2" , [ i32  .ValTypes ] -> [ i32  .ValTypes ] )
+              => #throwException(ExecutionFailed, "no bigInt under the given handle") ...
+        </instrs>
+        <locals> 0 |-> <i32> IDX </locals>
+        <bigIntHeap> HEAP </bigIntHeap>
+      requires notBool (IDX in_keys(HEAP))
+        orBool notBool isInt(HEAP[IDX] orDefault 0)
+
 endmodule
 ```

@@ -1,7 +1,7 @@
 # Experiments
 
 Throwaway scripts used to try contracts from `mx-sdk-rs` against the imported Python tooling,
-without going through `kasmer build` (which calls `sc-meta`). They run inside the dev container,
+without a `kasmer.json` project (see `kasmer claims`). They run inside the dev container,
 in the Poetry environment of `kmultiversx` or `kmxwasm`.
 
 - `fuzz_pt.py TEST_DIR CONTRACT.wasm...` deploys the test contract found in `TEST_DIR/output` and

@@ -15,7 +15,8 @@ which only fires on concrete arguments. On a symbolic argument the term is left
 as it is, the backend cannot rule out the `undefined` case, and execution ends
 in a spurious `trap`. The lemmas below evaluate `#extends` symbolically when
 the argument is known to fit in the signed range of the source width, which is
-the common case: sign-extending the `i8` result of a comparison.
+the common case: sign-extending the `i8` result of a comparison. A second lemma
+covers an arbitrary argument.
 
 ```k
 requires "../ceils-syntax.k"
@@ -56,6 +57,20 @@ and assume `-2^(w-1) <= X < 2^(w-1)`. Then:
        andBool 0 -Int #pow1(W) <=Int X
        andBool X <Int #pow1(W)
       [simplification, concrete(TO, W, N)]
+```
+
+For an arbitrary `X`, let `S = ((X + 2^(w-1)) mod 2^w) - 2^(w-1)`. `S` is in the
+signed range of `W` and congruent to `X` modulo `2^w`, so it is the value that
+`#signed(W, #wrap(N, X))` computes. The result is `S` modulo `2^t`.
+This lemma has a lower priority than the previous one, which gives a simpler
+term when its side condition can be proven.
+
+```k
+  rule #extends(TO:IValType, W:IWidth, #wrap(N:Int, X:Int))
+        => < TO > ((((X +Int #pow1(W)) modIntTotal #pow(W)) -Int #pow1(W)) modIntTotal #pow(TO))
+      requires N ==Int #numBytes(W)
+       andBool #numBytes(W) <=Int #numBytes(TO)
+      [simplification(60), concrete(TO, W, N)]
 
 endmodule
 ```
