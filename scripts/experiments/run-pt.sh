@@ -2,7 +2,7 @@
 # Tries a parametric test contract, compiled elsewhere, against the tooling:
 # fuzzing first, then symbolic verification of each test endpoint.
 #
-#   scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...
+#   scripts/experiments/run-pt.sh <test-contract-dir> [<contract.wasm>...]
 #
 # Example, with an mx-sdk-rs checkout next to this repository:
 #   scripts/experiments/run-pt.sh \
@@ -14,7 +14,7 @@
 # the originals are not modified. Requires scripts/build.sh.
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib.sh"
-[ $# -ge 2 ] || { echo "usage: $(basename "$0") <test-contract-dir> <contract.wasm>..." >&2; exit 2; }
+[ $# -ge 1 ] || { echo "usage: $(basename "$0") <test-contract-dir> [<contract.wasm>...]" >&2; exit 2; }
 
 TEST_DIR=$(cd "$1" && pwd); shift
 NAME=$(basename "$TEST_DIR")
@@ -24,7 +24,11 @@ mkdir -p "$RUN/test/output" "$RUN/contracts/output"
 cp "$TEST_DIR"/output/*.wasm "$TEST_DIR"/output/*.abi.json "$RUN/test/output/"
 for w in "$@"; do cp "$w" "$RUN/contracts/output/"; done
 # `kasmer verify` insists on a kasmer.json listing existing contract directories.
-echo '{"contracts": ["../contracts"]}' > "$RUN/test/kasmer.json"
+if [ $# -gt 0 ]; then
+    echo '{"contracts": ["../contracts"]}' > "$RUN/test/kasmer.json"
+else
+    echo '{"contracts": []}' > "$RUN/test/kasmer.json"
+fi
 
 ensure_container
 in_container scripts/experiments/inside-run-pt.sh ".pt-runs/$NAME"

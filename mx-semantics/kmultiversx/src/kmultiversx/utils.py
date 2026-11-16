@@ -5,7 +5,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, TypeVar
 
-from pyk.kast.inner import KInner, KSort
+from pyk.kast.inner import KApply, KInner, KSort
+from pyk.kast.prelude.string import stringToken
 from pyk.utils import run_process
 from pykwasm import wasm2kast
 
@@ -50,9 +51,21 @@ def flatten(l: list[list[T]]) -> list[T]:
     return [item for sublist in l for item in sublist]
 
 
+def _with_filename(module: KInner, filename: str) -> KInner:
+    """Record the file the module came from in its metadata.
+
+    `wasm2kast` ignores the file name it is given, but `checkAccountCode` in scenarios compares it.
+    """
+    assert isinstance(module, KApply) and module.label.name == 'aModuleDecl'
+    meta = module.args[-1]
+    assert isinstance(meta, KApply) and meta.label.name == 'moduleMeta'
+    new_meta = meta.let(args=(*meta.args[:-1], stringToken(filename)))
+    return module.let(args=(*module.args[:-1], new_meta))
+
+
 def load_wasm(file_path: Path) -> KInner:
     with file_path.open(mode='rb') as f:
-        return wasm2kast.wasm2kast(f, str(file_path))
+        return _with_filename(wasm2kast.wasm2kast(f, str(file_path)), str(file_path))
 
 
 def load_wasm_from_mxsc(file_path: Path) -> KInner:
@@ -60,7 +73,7 @@ def load_wasm_from_mxsc(file_path: Path) -> KInner:
         contract_json = json.load(f)
         code_hex = contract_json['code']
         code_bytes = bytes.fromhex(code_hex)
-        return wasm2kast.wasm2kast(BytesIO(code_bytes), str(file_path))
+        return _with_filename(wasm2kast.wasm2kast(BytesIO(code_bytes), str(file_path)), str(file_path))
 
 
 def krun_config(krun: KRun, conf: KInner, pipe_stderr: bool = False) -> KInner:

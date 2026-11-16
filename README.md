@@ -96,7 +96,8 @@ effect on the next `build.sh` or `test.sh`.
 | `scripts/test.sh symbolic -k call_add` | For a single suite, extra arguments go to `pytest` |
 | `scripts/build.sh mxwasm-semantics.haskell` | Build selected targets only. After changing a lemma, this one target is enough and takes about 2 minutes |
 | `scripts/shell.sh` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
-| `scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+| `scripts/experiments/run-pt.sh <test-contract-dir> [<contract.wasm>...]` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+| `scripts/conformance.sh <mx-sdk-rs-dir> [list...]` | Run the scenarios of an `mx-sdk-rs` checkout on the VM model; one line per failure, with what it is stuck on |
 | `scripts/update-wasm-semantics.sh <version>` | Replace the vendored Wasm semantics with another upstream release |
 | `scripts/migrations/` | One-off conversions of checked-in K terms (JSON) for an upgrade of the semantics. Kept as a record and as a template for the next upgrade |
 
