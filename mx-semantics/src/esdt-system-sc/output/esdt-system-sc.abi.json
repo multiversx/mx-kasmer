@@ -1,0 +1,249 @@
+{
+    "buildInfo": {
+        "rustc": {
+            "version": "1.99.1",
+            "commitHash": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+            "commitDate": "2026-10-13",
+            "channel": "Stable",
+            "host": "aarch64-apple-darwin",
+            "short": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+            "llvmVersion": "23.1"
+        },
+        "contractCrate": {
+            "name": "esdt-system-sc",
+            "version": "0.0.0"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.3"
+        }
+    },
+    "name": "PayableFeatures",
+    "constructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "issue",
+            "rustMethodName": "issue_fungible",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "_token_display_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "token_ticker",
+                    "type": "bytes"
+                },
+                {
+                    "name": "initial_supply",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "_num_decimals",
+                    "type": "u32"
+                },
+                {
+                    "name": "_token_properties",
+                    "type": "variadic<multi<bytes,bool>>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "issueNonFungible",
+            "rustMethodName": "issue_non_fungible",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "_token_display_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "token_ticker",
+                    "type": "bytes"
+                },
+                {
+                    "name": "_token_properties",
+                    "type": "variadic<multi<bytes,bool>>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "issueSemiFungible",
+            "rustMethodName": "issue_semi_fungible",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "_token_display_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "token_ticker",
+                    "type": "bytes"
+                },
+                {
+                    "name": "_token_properties",
+                    "type": "variadic<multi<bytes,bool>>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "registerMetaESDT",
+            "rustMethodName": "issue_meta_esdt",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "_token_display_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "token_ticker",
+                    "type": "bytes"
+                },
+                {
+                    "name": "_num_decimals",
+                    "type": "u32"
+                },
+                {
+                    "name": "_token_properties",
+                    "type": "variadic<multi<bytes,bool>>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "setSpecialRole",
+            "rustMethodName": "set_special_roles",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "_token_id",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "_address",
+                    "type": "Address"
+                },
+                {
+                    "name": "_roles",
+                    "type": "variadic<EsdtLocalRole>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "registerAndSetAllRoles",
+            "rustMethodName": "register_and_set_all_roles",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "_token_display_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "token_ticker",
+                    "type": "bytes"
+                },
+                {
+                    "name": "_token_type_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "_num_decimals",
+                    "type": "u32"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {
+        "EsdtLocalRole": {
+            "type": "enum",
+            "variants": [
+                {
+                    "name": "None",
+                    "discriminant": 0
+                },
+                {
+                    "name": "Mint",
+                    "discriminant": 1
+                },
+                {
+                    "name": "Burn",
+                    "discriminant": 2
+                },
+                {
+                    "name": "NftCreate",
+                    "discriminant": 3
+                },
+                {
+                    "name": "NftAddQuantity",
+                    "discriminant": 4
+                },
+                {
+                    "name": "NftBurn",
+                    "discriminant": 5
+                },
+                {
+                    "name": "NftAddUri",
+                    "discriminant": 6
+                },
+                {
+                    "name": "NftUpdateAttributes",
+                    "discriminant": 7
+                },
+                {
+                    "name": "Transfer",
+                    "discriminant": 8
+                }
+            ]
+        }
+    }
+}
