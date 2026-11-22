@@ -142,7 +142,7 @@ definitions whose sources changed are then rebuilt.
 
 The Rust replacement of the Python tooling is being written in `crates/`, a Cargo workspace at the
 repository root. It runs on the host; running contracts also needs the compiled LLVM definition,
-which for now is in the container:
+and symbolic execution the `kore-rpc-booster` server, which for now are in the container:
 
 ```sh
 cargo test
@@ -151,6 +151,10 @@ cargo test
 scripts/llvm-kasmer-host.sh                       # writes .build/llvm-kasmer/
 export KASMER_LLVM_DEFINITION=$PWD/.build/llvm-kasmer
 cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt fuzz
+
+# Symbolic execution: a server directory for the booster in the container.
+scripts/kore-rpc-host.sh                          # writes .build/kore-rpc/
+export KASMER_RPC_SERVER=$PWD/.build/kore-rpc
 ```
 
 | Crate | Contents |
@@ -159,10 +163,17 @@ cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt fuzz
 | `kwasm` | Wasm binary to the K term of its module (replaces pykwasm's `wasm2kast` and pyk's `kast_to_kore`) |
 | `kasmer` | The library: test projects, setting up and deploying into the configuration, running the LLVM interpreter, fuzzing. Depends only on `kore`, `kwasm` and `serde_json` |
 | `kasmer-cli` | The command line, `kasmer-rs` for now: `fuzz` (replaces `kasmer fuzz`) and `deploy` (prints the deployed configuration) |
+| `kore-rpc` | Client of the K JSON-RPC servers (`execute`, `implies`, `simplify`, `get-model`, `add-module`), and a launcher that starts a server from a server directory and connects to it, also in a container |
+| `kcfg` | Proof graphs in KORE, as pyk's `KCFG`: constrained terms, edges, covers, splits, branches; extending a node from an `execute` result as pyk does; saved to disk as the proof goes, so that a proof can be resumed |
 
 `scripts/llvm-kasmer-host.sh` copies `definition.kore` out of the container and writes an
 `interpreter` wrapper that runs the real one there with `docker exec`. Where the K backends run
 natively, the compiled definition directory can be used directly.
+
+`scripts/kore-rpc-host.sh` does the same for the booster: a `server` script that starts it in the
+container (and stops it when its standard input closes, so no server outlives the host process),
+and a `connect` script that forwards a connection to it through `docker exec`, since the container
+publishes no ports.
 
 The Python tooling stays until the Rust tool can replace it, and serves as the reference: the Rust
 crates are checked against output of pyk. `scripts/kore-corpus.sh` writes that reference data into
@@ -172,6 +183,12 @@ and of upstream's Wasm test modules, and the fuzzing setup of four test projects
 their exit codes); `cargo test` then checks the crates against it, byte for byte. Without the data
 those tests pass with a notice. The tests that run the interpreter also need
 `KASMER_LLVM_DEFINITION`.
+
+`scripts/rpc-corpus.sh` records a proof of the Python tooling (the claim `test_call_add` of the
+`kmxwasm` integration tests, about three minutes) into `.conformance/rpc/`: every JSON-RPC exchange
+with the booster, how pyk read each execution result, and the final proof graph. `kore-rpc` and
+`kcfg` check themselves against it; with `KASMER_RPC_SERVER` set, they also replay the recorded
+requests against a fresh server and compare the results.
 
 ### Known limitations
 

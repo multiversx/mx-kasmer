@@ -1,0 +1,13 @@
+[package]
+name = "kcfg"
+version = "0.1.0"
+description = "Proof graphs of symbolic execution on the K JSON-RPC servers, in KORE, stored on disk so that proofs can be resumed"
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+kore = { path = "../kore" }
+kore-rpc = { path = "../kore-rpc" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"

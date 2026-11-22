@@ -15,12 +15,13 @@ use std::io;
 use serde::{Deserialize, Serialize};
 
 use crate::syntax::Pattern;
-pub use term::Term;
+pub use term::{Term, TermOwned};
 
 pub type JsonError = serde_json::Error;
 
-/// Reads a value with no limit on nesting.
-fn from_str<'a, T: Deserialize<'a>>(src: &'a str) -> Result<T, JsonError> {
+/// Reads a value with no limit on nesting: any type whose patterns use the implementations of
+/// this crate, such as a JSON-RPC message.
+pub fn from_str<'a, T: Deserialize<'a>>(src: &'a str) -> Result<T, JsonError> {
     let mut de = serde_json::Deserializer::from_str(src);
     de.disable_recursion_limit();
     let value = T::deserialize(serde_stacker::Deserializer::new(&mut de))?;
