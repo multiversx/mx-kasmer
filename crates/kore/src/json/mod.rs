@@ -1,25 +1,95 @@
 //! KORE JSON, the format of the K JSON-RPC servers (`kore-rpc`, `kore-rpc-booster`) and of pyk.
+//!
+//! [`Pattern`] and [`Sort`](crate::Sort) implement `Serialize` and `Deserialize`, so they can be
+//! embedded in other serde types (JSON-RPC messages). The functions here read and write strings
+//! with `serde_json`, without its nesting limit and with `serde_stacker`, which grows the stack
+//! on the heap as needed: terms nest one level per list or map element.
+//!
+//! The output has the layout of pyk (`json.dumps(..., sort_keys=True)`): keys sorted, `", "` and
+//! `": "` as separators, non-ASCII characters escaped. It can be compared with pyk's byte for byte.
 
-mod reader;
-mod writer;
+mod serde;
 
-pub use reader::{JsonError, parse_pattern, parse_term};
-pub use writer::{write_pattern, write_sort, write_term};
+use std::io;
 
+use ::serde::{Deserialize, Serialize};
+
+pub use self::serde::Term;
 use crate::syntax::Pattern;
+
+pub type JsonError = serde_json::Error;
+
+/// Reads a value with no limit on nesting.
+fn from_str<'a, T: Deserialize<'a>>(src: &'a str) -> Result<T, JsonError> {
+    let mut de = serde_json::Deserializer::from_str(src);
+    de.disable_recursion_limit();
+    let value = T::deserialize(serde_stacker::Deserializer::new(&mut de))?;
+    de.end()?;
+    Ok(value)
+}
+
+/// Reads a pattern in KORE JSON, without the wrapper.
+pub fn parse_pattern(src: &str) -> Result<Pattern, JsonError> {
+    from_str(src)
+}
+
+/// Reads a KORE JSON term: `{"format": "KORE", "version": 1, "term": pattern}`.
+pub fn parse_term(src: &str) -> Result<Pattern, JsonError> {
+    from_str::<self::serde::TermOwned>(src).map(|t| t.0)
+}
+
+/// Writes JSON with pyk's separators and ASCII-only output.
+struct PykFormatter;
+
+impl serde_json::ser::Formatter for PykFormatter {
+    fn begin_array_value<W: ?Sized + io::Write>(&mut self, w: &mut W, first: bool) -> io::Result<()> {
+        if first { Ok(()) } else { w.write_all(b", ") }
+    }
+
+    fn begin_object_key<W: ?Sized + io::Write>(&mut self, w: &mut W, first: bool) -> io::Result<()> {
+        if first { Ok(()) } else { w.write_all(b", ") }
+    }
+
+    fn begin_object_value<W: ?Sized + io::Write>(&mut self, w: &mut W) -> io::Result<()> {
+        w.write_all(b": ")
+    }
+
+    fn write_string_fragment<W: ?Sized + io::Write>(&mut self, w: &mut W, fragment: &str) -> io::Result<()> {
+        let mut plain = 0;
+        for (i, c) in fragment.char_indices() {
+            if c.is_ascii() {
+                continue;
+            }
+            w.write_all(&fragment.as_bytes()[plain..i])?;
+            for unit in c.encode_utf16(&mut [0; 2]) {
+                write!(w, "\\u{unit:04x}")?;
+            }
+            plain = i + c.len_utf8();
+        }
+        w.write_all(&fragment.as_bytes()[plain..])
+    }
+}
+
+/// Writes a value with pyk's layout and no limit on nesting.
+pub fn to_writer<W: io::Write, T: Serialize + ?Sized>(w: W, value: &T) -> Result<(), JsonError> {
+    let mut ser = serde_json::Serializer::with_formatter(w, PykFormatter);
+    value.serialize(serde_stacker::Serializer::new(&mut ser))
+}
+
+fn to_string<T: Serialize + ?Sized>(value: &T) -> String {
+    let mut out = Vec::new();
+    to_writer(&mut out, value).expect("serializing a pattern into memory does not fail");
+    String::from_utf8(out).expect("the output is ASCII")
+}
 
 /// The pattern as KORE JSON, without the wrapper.
 pub fn pattern_to_string(pattern: &Pattern) -> String {
-    let mut out = String::new();
-    write_pattern(pattern, &mut out);
-    out
+    to_string(pattern)
 }
 
 /// The pattern as a KORE JSON term, with the format wrapper.
 pub fn term_to_string(pattern: &Pattern) -> String {
-    let mut out = String::new();
-    write_term(pattern, &mut out);
-    out
+    to_string(&Term(pattern))
 }
 
 #[cfg(test)]

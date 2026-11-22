@@ -5,3 +5,8 @@ description = "KORE, the intermediate language of the K framework: term model, t
 edition.workspace = true
 repository.workspace = true
 publish.workspace = true
+
+[dependencies]
+serde = "1.0.229"
+serde_json = { version = "1.0.154", features = ["unbounded_depth"] }
+serde_stacker = "0.1.14"

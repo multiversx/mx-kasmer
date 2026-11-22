@@ -6,8 +6,10 @@
 //! - [`json`]: KORE JSON, as spoken by the K JSON-RPC servers.
 //!
 //! The printers produce the same text as pyk, byte for byte; `tests/conformance.rs` checks this
-//! against reference data written by pyk (`scripts/kore-corpus.sh`). Parsing, printing and
-//! dropping do not recurse, so terms of any depth are handled.
+//! against reference data written by pyk (`scripts/kore-corpus.sh`).
+//!
+//! Terms of any depth are handled: the text parser and printer and dropping do not recurse; JSON
+//! goes through `serde_json` with `serde_stacker`, which grows the stack as needed.
 
 pub mod json;
 pub mod quote;
