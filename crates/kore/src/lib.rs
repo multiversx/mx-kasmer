@@ -4,6 +4,7 @@
 //! - [`text`]: KORE text, as written by the K compiler (`definition.kore`) and read and written
 //!   by the LLVM interpreter. Parser and printer.
 //! - [`json`]: KORE JSON, as spoken by the K JSON-RPC servers.
+//! - [`symbols`]: symbol signatures of a definition; building well-sorted terms from K labels.
 //!
 //! The printers produce the same text as pyk, byte for byte; `tests/conformance.rs` checks this
 //! against reference data written by pyk (`scripts/kore-corpus.sh`).
@@ -13,6 +14,7 @@
 
 pub mod json;
 pub mod quote;
+pub mod symbols;
 pub mod syntax;
 pub mod text;
 

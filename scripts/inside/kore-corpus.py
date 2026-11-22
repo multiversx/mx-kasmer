@@ -10,21 +10,36 @@ Output, in the directory given as the only argument:
     configs/<name>.kore             a configuration printed by pyk
     configs/<name>.json             the same as KORE JSON (with the format/version wrapper)
     configs/<name>.interpreter.kore the raw output of the LLVM interpreter, where there is one
+    wasm/index.tsv                  for each .wasm file under contracts/: its path, used as the
+                                    module's file name, and the name of the file with its term
+    wasm/<name>.kore                the module as a KORE term of sort ModuleDecl: pykwasm's
+                                    wasm2kast, then pyk's kast_to_kore (crates/kwasm)
+    wasm/wat/<name>.wasm            crates/kwasm/tests/wat/<name>.wat compiled with wat2wasm
+    wasm/wat/<name>.kore            its module, converted as above, without a file name
+
+pykwasm is corrected before converting: it gives i64.extend8_s, i64.extend16_s and
+i64.extend32_s the type i32 (kwasm_ast.py), crates/kwasm gives them i64.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
-from pyk.kast.inner import KApply, Subst
+from pyk.kast.inner import KApply, KSort, Subst
 from pyk.kast.manip import split_config_from
 from pyk.kast.prelude.utils import token
 from pyk.kdist import kdist
 from pyk.kore.parser import KoreParser
 from pyk.kore.syntax import Axiom, Pattern
 from pyk.ktool.krun import KRun
+
+import pykwasm.binary.instructions
+import pykwasm.kwasm_ast as wast
+from pykwasm.wasm2kast import wasm2kast
 
 from kmultiversx import scenario
 from kmultiversx.scenario import KMap
@@ -111,10 +126,49 @@ def write_configs(out: Path) -> None:
         write_config(out, f'deploy-{name}-after', after, interpreter_output=proc.stdout)
 
 
+def fix_pykwasm() -> None:
+    """Give the i64 sign-extension instructions the type i64. The instruction parser refers to
+    the constants through the module, so replacing them there is enough."""
+    for name, op in [('I64_EXTEND8_s', 'aExtend8_s'), ('I64_EXTEND16_s', 'aExtend16_s'), ('I64_EXTEND32_s', 'aExtend32_s')]:
+        setattr(wast, name, KApply('aExtendS', [wast.i64, KApply(op, [])]))
+    assert pykwasm.binary.instructions.wast is wast
+
+
+def write_wasm(out: Path) -> None:
+    fix_pykwasm()
+    w = out / 'wasm'
+    w.mkdir(parents=True, exist_ok=True)
+    krun = KRun(kdist.get('mx-semantics.llvm-kasmer'))
+    # Relative paths, so that the file name stored in the module does not depend on where the
+    # repository is.
+    os.chdir(ROOT)
+    index = []
+    for path in sorted(Path('contracts').glob('**/output/*.wasm')):
+        name = str(path).replace('/', '__').removesuffix('.wasm')
+        pattern = krun.kast_to_kore(load_wasm(path), sort=KSort('ModuleDecl'))
+        (w / f'{name}.kore').write_text(pattern.text)
+        index.append(f'{path}\t{name}.kore\n')
+    (w / 'index.tsv').write_text(''.join(index))
+    print(f'wasm: {len(index)} modules')
+
+    wat = w / 'wat'
+    wat.mkdir(exist_ok=True)
+    wat_files = sorted(Path('crates/kwasm/tests/wat').glob('*.wat'))
+    for path in wat_files:
+        binary = wat / f'{path.stem}.wasm'
+        subprocess.run(['wat2wasm', str(path), '-o', str(binary)], check=True)
+        with binary.open('rb') as f:
+            module = wasm2kast(f)
+        pattern = krun.kast_to_kore(module, sort=KSort('ModuleDecl'))
+        (wat / f'{path.stem}.kore').write_text(pattern.text)
+    print(f'wat: {len(wat_files)} modules')
+
+
 def main() -> None:
-    out = Path(sys.argv[1])
+    out = Path(sys.argv[1]).resolve()
     write_definitions(out)
     write_configs(out)
+    write_wasm(out)
 
 
 if __name__ == '__main__':

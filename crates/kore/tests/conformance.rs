@@ -139,3 +139,37 @@ fn configurations() {
         eprintln!("{name}: depth {}", from_text.depth());
     }
 }
+
+/// The encoding of labels into symbol names agrees with the K compiler on every symbol that
+/// records its label in a `symbol` attribute, except list units of generated labels, whose
+/// attribute holds a shortened label.
+#[test]
+fn label_encoding() {
+    let Some(dir) = corpus() else { return };
+    let dir = dir.join("definitions");
+    for (name, path) in files(&dir, ".pyk.kore") {
+        let definition = text::parse_definition(&read(&path)).unwrap();
+        let mut count = 0;
+        for decl in definition.symbol_decls() {
+            let label = decl
+                .attrs
+                .iter()
+                .find(|a| &*a.symbol == "symbol'Kywd'")
+                .and_then(|a| match a.args.first() {
+                    Some(kore::Pattern::String(s)) => Some(s.as_str()),
+                    _ => None,
+                });
+            let Some(label) = label else { continue };
+            if label.starts_with(".List{\"___") {
+                continue;
+            }
+            // A label written with surrounding spaces in the K source (" memImportDesc") keeps
+            // them in the attribute; the compiler trims them for the symbol name.
+            let encoded = kore::symbols::label_to_symbol(label.trim());
+            assert_eq!(encoded.as_deref(), Some(&*decl.name), "{name}: {label}");
+            count += 1;
+        }
+        assert!(count > 100, "{name}: only {count} labels");
+        eprintln!("{name}: {count} labels encode to their symbols");
+    }
+}

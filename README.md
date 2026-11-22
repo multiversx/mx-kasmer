@@ -149,14 +149,15 @@ cargo test
 
 | Crate | Contents |
 |---|---|
-| `kore` | KORE term model; text and JSON parsers and printers |
+| `kore` | KORE term model; text and JSON parsers and printers; symbol signatures and well-sorted term building from K labels |
+| `kwasm` | Wasm binary to the K term of its module (replaces pykwasm's `wasm2kast` and pyk's `kast_to_kore`) |
 
 The Python tooling stays until the Rust tool can replace it, and serves as the reference: the Rust
 crates are checked against output of pyk. `scripts/kore-corpus.sh` writes that reference data into
 `.conformance/kore/` (two compiled definitions, their 34,000 axioms, configurations with deployed
-contracts, and raw output of the LLVM interpreter); `cargo test` then checks that `kore` parses all
-of it and prints the same text and JSON as pyk, byte for byte. Without the data those tests pass
-with a notice.
+contracts, raw output of the LLVM interpreter, and the module terms of every contract in
+`contracts/` and of upstream's Wasm test modules); `cargo test` then checks the crates against it,
+byte for byte. Without the data those tests pass with a notice.
 
 ### Known limitations
 
