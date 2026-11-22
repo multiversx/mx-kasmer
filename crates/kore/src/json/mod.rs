@@ -8,14 +8,14 @@
 //! The output has the layout of pyk (`json.dumps(..., sort_keys=True)`): keys sorted, `", "` and
 //! `": "` as separators, non-ASCII characters escaped. It can be compared with pyk's byte for byte.
 
-mod serde;
+mod term;
 
 use std::io;
 
-use ::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
-pub use self::serde::Term;
 use crate::syntax::Pattern;
+pub use term::Term;
 
 pub type JsonError = serde_json::Error;
 
@@ -35,7 +35,7 @@ pub fn parse_pattern(src: &str) -> Result<Pattern, JsonError> {
 
 /// Reads a KORE JSON term: `{"format": "KORE", "version": 1, "term": pattern}`.
 pub fn parse_term(src: &str) -> Result<Pattern, JsonError> {
-    from_str::<self::serde::TermOwned>(src).map(|t| t.0)
+    from_str::<term::TermOwned>(src).map(|t| t.0)
 }
 
 /// Writes JSON with pyk's separators and ASCII-only output.
