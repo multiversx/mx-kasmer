@@ -25,6 +25,8 @@ pub enum Error {
     Build(BuildError),
     /// The interpreter could not be run, or gave no configuration.
     Interpreter(String),
+    /// The symbolic proof machinery failed (not the proof): server, graph, storage.
+    Proof(String),
     /// A run that should have consumed all the steps in `<k>` stopped before.
     Stuck {
         what: String,
@@ -51,6 +53,7 @@ impl fmt::Display for Error {
             Error::Wasm { name, source } => write!(f, "{name}: {source}"),
             Error::Build(e) => e.fmt(f),
             Error::Interpreter(m) => write!(f, "interpreter: {m}"),
+            Error::Proof(m) => write!(f, "proof: {m}"),
             Error::Stuck {
                 what,
                 k,

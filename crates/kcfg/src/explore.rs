@@ -56,11 +56,26 @@ pub fn extend_node(
     params: &ExecuteParams,
     labels: &RuleLabels,
 ) -> Result<(Vec<Extension>, Vec<NodeId>), ExploreError> {
+    let cterm = kcfg.node(node)?.cterm.clone();
+    extend_node_as(client, kcfg, node, &cterm, params, labels)
+}
+
+/// As [`extend_node`], but executes `cterm` in place of the node's own term: a version of it with
+/// parts abstracted, say. Case splits are made on the node's own term; the other new nodes come
+/// from the server's results, so from `cterm`.
+pub fn extend_node_as(
+    client: &mut Client,
+    kcfg: &mut Kcfg,
+    node: NodeId,
+    cterm: &CTerm,
+    params: &ExecuteParams,
+    labels: &RuleLabels,
+) -> Result<(Vec<Extension>, Vec<NodeId>), ExploreError> {
     if !kcfg.is_leaf(node) {
         return Err(GraphError(format!("node {node} is not a leaf")).into());
     }
     let mut params = params.clone();
-    params.state = Kore(kcfg.node(node)?.cterm.to_kore());
+    params.state = Kore(cterm.to_kore());
     params.log_successful_rewrites = Some(true);
     let result = client.execute(&params)?;
     let extensions = classify(&result, labels)?;

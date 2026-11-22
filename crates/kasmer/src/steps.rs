@@ -76,9 +76,14 @@ impl<'a> Builder<'a> {
 
     /// A `ListBytes` of `wrapBytes` items, as `kmultiversx.scenario.ListBytes`.
     pub fn list_bytes<B: AsRef<[u8]>>(&self, items: &[B]) -> R<Term> {
+        self.list_bytes_of(items.iter().map(|i| self.bytes(i.as_ref())).collect())
+    }
+
+    /// A `ListBytes` of `wrapBytes` items, from terms of sort `Bytes`.
+    pub fn list_bytes_of(&self, items: Vec<Term>) -> R<Term> {
         let mut list = self.app(".ListBytes", vec![])?;
-        for item in items.iter().rev() {
-            let wrapped = self.app("wrapBytes", vec![self.bytes(item.as_ref())])?;
+        for item in items.into_iter().rev() {
+            let wrapped = self.app("wrapBytes", vec![item])?;
             let item = self.app("ListBytesItem", vec![wrapped])?;
             list = self.app("_ListBytes_", vec![item, list])?;
         }
@@ -160,6 +165,22 @@ impl<'a> Builder<'a> {
         gas: u64,
         gas_price: u64,
     ) -> R<Term> {
+        let args = self.list_bytes(args)?;
+        self.call_tx_with(from, to, value, function, args, gas, gas_price)
+    }
+
+    /// `callTx` with the arguments given as a term of sort `ListBytes`, such as symbolic ones.
+    #[allow(clippy::too_many_arguments)]
+    pub fn call_tx_with(
+        &self,
+        from: &[u8],
+        to: &[u8],
+        value: u64,
+        function: &str,
+        args: Term,
+        gas: u64,
+        gas_price: u64,
+    ) -> R<Term> {
         self.app(
             "callTx",
             vec![
@@ -168,7 +189,7 @@ impl<'a> Builder<'a> {
                 self.int(value),
                 self.app(".List", vec![])?,
                 self.wasm_string(function),
-                self.list_bytes(args)?,
+                args,
                 self.int(gas),
                 self.int(gas_price),
             ],

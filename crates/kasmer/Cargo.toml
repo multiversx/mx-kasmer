@@ -9,4 +9,6 @@ publish.workspace = true
 [dependencies]
 kore = { path = "../kore" }
 kwasm = { path = "../kwasm" }
+kcfg = { path = "../kcfg" }
+kore-rpc = { path = "../kore-rpc" }
 serde_json = "1.0.154"

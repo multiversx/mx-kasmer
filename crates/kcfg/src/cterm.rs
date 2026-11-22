@@ -48,16 +48,24 @@ impl CTerm {
         c
     }
 
-    /// The configuration of a state, with its substitution and predicate as constraints.
+    /// The configuration of a state, with its substitution and predicate as constraints. The term
+    /// itself can be a conjunction of the configuration and constraints too; as pyk's
+    /// `CTerm.from_kast`, every conjunct that is not a matching-logic connective is the
+    /// configuration.
     pub fn from_state(state: &State) -> CTerm {
-        let mut constraints = Vec::new();
+        let mut parts = conjuncts(state.term.0.clone());
+        let at = parts
+            .iter()
+            .position(|p| !matches!(p, Pattern::Ml(_)))
+            .unwrap_or(0);
+        let config = parts.remove(at);
         if let Some(s) = &state.substitution {
-            constraints.push(s.0.clone());
+            parts.push(s.0.clone());
         }
         if let Some(p) = &state.predicate {
-            constraints.push(p.0.clone());
+            parts.push(p.0.clone());
         }
-        CTerm::new(state.term.0.clone(), constraints)
+        CTerm::new(config, parts)
     }
 
     /// As one pattern: `\and{SortGeneratedTopCell{}}(config, \and{...}(c1, \and{...}(c2, ...)))`,

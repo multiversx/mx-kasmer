@@ -152,17 +152,20 @@ scripts/llvm-kasmer-host.sh                       # writes .build/llvm-kasmer/
 export KASMER_LLVM_DEFINITION=$PWD/.build/llvm-kasmer
 cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt fuzz
 
-# Symbolic execution: a server directory for the booster in the container.
+# Verification: a server directory for the booster in the container, then prove each test
+# endpoint for all arguments. Proofs are saved in <project>/.kasmer/proofs and resumed when run
+# again (--fresh to start over).
 scripts/kore-rpc-host.sh                          # writes .build/kore-rpc/
 export KASMER_RPC_SERVER=$PWD/.build/kore-rpc
+cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt verify -v
 ```
 
 | Crate | Contents |
 |---|---|
 | `kore` | KORE term model; text and JSON parsers and printers; symbol signatures and well-sorted term building from K labels |
 | `kwasm` | Wasm binary to the K term of its module (replaces pykwasm's `wasm2kast` and pyk's `kast_to_kore`) |
-| `kasmer` | The library: test projects, setting up and deploying into the configuration, running the LLVM interpreter, fuzzing. Depends only on `kore`, `kwasm` and `serde_json` |
-| `kasmer-cli` | The command line, `kasmer-rs` for now: `fuzz` (replaces `kasmer fuzz`) and `deploy` (prints the deployed configuration) |
+| `kasmer` | The library: test projects, setting up and deploying into the configuration, running the LLVM interpreter, fuzzing; claims and their proofs on the booster (cut points, cell abstraction, Wasm instantiation on the LLVM interpreter). Depends on `kore`, `kwasm`, `kore-rpc`, `kcfg` and `serde_json` |
+| `kasmer-cli` | The command line, `kasmer-rs` for now: `fuzz` (replaces `kasmer fuzz`), `verify` (replaces `kasmer claims` and `kasmer verify`) and `deploy` (prints the deployed configuration) |
 | `kore-rpc` | Client of the K JSON-RPC servers (`execute`, `implies`, `simplify`, `get-model`, `add-module`), and a launcher that starts a server from a server directory and connects to it, also in a container |
 | `kcfg` | Proof graphs in KORE, as pyk's `KCFG`: constrained terms, edges, covers, splits, branches; extending a node from an `execute` result as pyk does; saved to disk as the proof goes, so that a proof can be resumed |
 
@@ -184,11 +187,13 @@ their exit codes); `cargo test` then checks the crates against it, byte for byte
 those tests pass with a notice. The tests that run the interpreter also need
 `KASMER_LLVM_DEFINITION`.
 
-`scripts/rpc-corpus.sh` records a proof of the Python tooling (the claim `test_call_add` of the
-`kmxwasm` integration tests, about three minutes) into `.conformance/rpc/`: every JSON-RPC exchange
-with the booster, how pyk read each execution result, and the final proof graph. `kore-rpc` and
-`kcfg` check themselves against it; with `KASMER_RPC_SERVER` set, they also replay the recorded
-requests against a fresh server and compare the results.
+`scripts/rpc-corpus.sh` records proofs of the Python tooling (`kasmer verify` of two endpoints of
+`adder-pt` and the failing one of `adder-pt-fail`, about ten minutes) into `.conformance/rpc/`: the
+claim's first two nodes in KORE, every JSON-RPC exchange with the booster, how pyk read each
+execution result, and the final proof graph. `kore-rpc` and `kcfg` check themselves against it;
+`kasmer` builds the same claims and, with `KASMER_RPC_SERVER` set, proves them with the same
+result and the same graph. With `KASMER_RPC_SERVER` set, the recorded requests are also replayed
+against a fresh server.
 
 ### Known limitations
 

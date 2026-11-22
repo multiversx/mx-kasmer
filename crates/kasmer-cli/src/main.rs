@@ -4,9 +4,12 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+mod verify;
+
 use clap::{Parser, Subcommand};
 use kasmer::fuzz::{self, Outcome, Template};
 use kasmer::project::Project;
+use kasmer::prove;
 use kasmer::setup::{self, Contract};
 use kasmer::{Error, LlvmDefinition};
 
@@ -47,6 +50,39 @@ enum Command {
         #[arg(long, short)]
         jobs: Option<usize>,
         /// Print the whole <k> cell of a failure, not just its start.
+        #[arg(long, short)]
+        verbose: bool,
+    },
+    /// Proves each test endpoint for all arguments, symbolically, on kore-rpc-booster. Proofs are
+    /// saved as they go and resumed when run again.
+    Verify {
+        /// Only these test endpoints.
+        tests: Vec<String>,
+        /// The server directory of kore-rpc-booster with the symbolic definition
+        /// (mxwasm-semantics.haskell). On macOS, scripts/kore-rpc-host.sh writes one that runs it
+        /// in the development container.
+        #[arg(long, env = "KASMER_RPC_SERVER")]
+        server: Option<PathBuf>,
+        /// Where proofs are saved, one directory per endpoint.
+        /// Default: <project>/.kasmer/proofs.
+        #[arg(long)]
+        proofs: Option<PathBuf>,
+        /// Start again rather than resume saved proofs.
+        #[arg(long)]
+        fresh: bool,
+        /// Rewrite steps per request to the server, at most.
+        #[arg(long, default_value_t = 10_000)]
+        depth: u64,
+        /// Nodes of the proof graph processed per endpoint, at most, in this run.
+        #[arg(long, default_value_t = 10_000)]
+        iterations: usize,
+        /// Append the server's output to this file.
+        #[arg(long)]
+        server_log: Option<PathBuf>,
+        /// Write every request to the server and its response to this file (JSON lines).
+        #[arg(long)]
+        transcript: Option<PathBuf>,
+        /// Print every node processed.
         #[arg(long, short)]
         verbose: bool,
     },
@@ -103,6 +139,37 @@ fn run(cli: Cli) -> Result<bool, Error> {
                 None => println!("{text}"),
             }
             Ok(true)
+        }
+        Command::Verify {
+            tests,
+            server,
+            proofs,
+            fresh,
+            depth,
+            iterations,
+            server_log,
+            transcript,
+            verbose,
+        } => {
+            let Some(server) = server else {
+                return Err(Error::Project(
+                    "no server: pass --server or set KASMER_RPC_SERVER (see scripts/kore-rpc-host.sh)".into(),
+                ));
+            };
+            let proofs = proofs.unwrap_or_else(|| project.dir.join(".kasmer").join("proofs"));
+            let options = verify::Options {
+                server,
+                proofs,
+                server_log,
+                transcript,
+                verbose,
+                prove: prove::Options {
+                    max_depth: depth,
+                    max_iterations: iterations,
+                    fresh,
+                },
+            };
+            verify::verify_all(&definition, &project, &deployed, &tests, &options)
         }
         Command::Fuzz {
             tests,

@@ -36,3 +36,5 @@ __pycache__/
 
 # host-side definition directories written by scripts/llvm-kasmer-host.sh
 /.build/
+# Proofs saved by kasmer-rs verify
+.kasmer/
