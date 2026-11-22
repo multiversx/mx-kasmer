@@ -30,7 +30,8 @@ test_semantics() {
 
     echo ">> semantics: scenarios of the test contracts in contracts/"
     local pt="$ROOT/contracts/parametric-tests"
-    local scenarios=("$pt"/{myadder,magic-adder,addercaller,caller}/scenarios/*.scen.json)
+    local scenarios=("$pt"/{myadder,magic-adder,addercaller,caller}/scenarios/*.scen.json
+                     "$ROOT"/contracts/esdt-system-sc/scenarios/*.scen.json)
     # (the scenario runner announces every external steps file; not interesting here)
     mandos "${scenarios[@]}" | { grep -v '^Load external' || true; }
     echo "   ok  ${#scenarios[@]} scenarios"

@@ -11,6 +11,7 @@ relative paths in scenarios and in `kasmer.json` files are the same in both repo
 | `examples/` | Contracts under test: `adder`, `crowdfunding`, `multisig` |
 | `parametric-tests/*-pt*` | Parametric test contracts, each with a `kasmer.json` naming the contracts it tests |
 | `parametric-tests/` (others) | Helper contracts of the scenario tests: `myadder` and `addercaller`, `caller` and `callee`, `magic-adder` (contract under test of `adder-pt-magic`, with a planted bug) |
+| `esdt-system-sc/` | Model of the protocol's ESDT system contract. The exception: its source is kept here, as there is no other copy; see the README there |
 | `unported/` | Test contracts of the original case studies whose contracts under test live in other repositories. Still Rust sources, not built; see the README there |
 
 Each contract directory holds:

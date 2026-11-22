@@ -59,7 +59,7 @@ Where to start reading (`K` stands for `mx-semantics/kmultiversx/src/kmultiversx
 | Lemmas | `kasmer-multiversx/kmxwasm/src/kmxwasm/kdist/mxwasm-semantics/` |
 | Proof loop | `kasmer-multiversx/kmxwasm/src/kmxwasm/property_testing/running.py` |
 | Command line tool | `kasmer-multiversx/kmxwasm/src/kmxwasm/kasmer/` |
-| ESDT system contract model (a Rust contract) | `mx-semantics/src/esdt-system-sc/` |
+| ESDT system contract model (a Rust contract, with its source) | `contracts/esdt-system-sc/` |
 | Test contracts: compiled `.wasm` and ABI, scenarios, `kasmer.json`. Sources are in mx-sdk-rs; see [contracts/README.md](contracts/README.md) | `contracts/` |
 
 ## Building and running the tests
