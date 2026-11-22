@@ -10,15 +10,16 @@ cd "$RUN"
 
 echo ">> fuzzing (concrete, LLVM backend)"
 status=0
-python3 "$EXP/fuzz_pt.py" test contracts/*.wasm > fuzz.log 2>&1 || status=1
+python3 "$EXP/fuzz_pt.py" test $(ls contracts/output/*.wasm 2>/dev/null) > fuzz.log 2>&1 || status=1
 grep -E "^(deploy|Testing|Passed|FAILED|fuzzing:)" fuzz.log || true
 echo "   full log: .pt-runs/$(basename "$RUN")/fuzz.log"
 
 echo ">> generating claims"
-python3 "$EXP/gen_claims_pt.py" test contracts/*.wasm 2>&1 | grep -vE '^INFO|pyk\.'
+kasmer -C test claims 2>&1 | grep -vE 'pyk\.'
 
 cd test
 for claim in generated_claims/*-spec.json; do
+    [ -e "$claim" ] || { echo ">> no test_* endpoints, nothing to verify"; break; }
     t=$(basename "$claim" -spec.json)
     echo ">> verifying $t (symbolic, booster backend); log: .pt-runs/$(basename "$RUN")/verify-$t.log"
     if kasmer verify "$t" --booster > "../verify-$t.log" 2>&1; then

@@ -1,0 +1,92 @@
+{
+    "buildInfo": {
+        "rustc": {
+            "version": "1.96.1",
+            "commitHash": "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd",
+            "commitDate": "2026-06-26",
+            "channel": "Stable",
+            "host": "aarch64-apple-darwin",
+            "short": "rustc 1.96.1 (31fca3adb 2026-06-26)",
+            "llvmVersion": "22.1"
+        },
+        "contractCrate": {
+            "name": "adder-pt-fail",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-57-g7926b3ba59"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "docs": [
+        "Parametric tests that are expected to FAIL.",
+        "",
+        "They exist to check the tooling, not the Adder contract:",
+        "a fuzzer or prover that reports these as passing is broken."
+    ],
+    "name": "TestAdderFail",
+    "constructor": {
+        "docs": [
+            "Create the owner account and deploy adder. Same setup as in `adder-pt`."
+        ],
+        "inputs": [
+            {
+                "name": "code_path",
+                "type": "bytes"
+            }
+        ],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "docs": [
+                "Control: correct property, expected to PASS.",
+                "Shows that a failure reported for the other tests is not caused by the setup."
+            ],
+            "name": "test_control_passes",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Expected to FAIL for every input: the expected sum is off by one.",
+                "Any fuzzing run should find this immediately."
+            ],
+            "name": "test_wrong_sum",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Expected to FAIL for exactly one input out of all non-negative integers:",
+                "`value == RARE_SUM - INIT_SUM`.",
+                "Fuzzing is very unlikely to find it; symbolic execution must."
+            ],
+            "name": "test_rare_failure",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

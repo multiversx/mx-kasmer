@@ -1,0 +1,22 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "test-testapi",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-57-g7926b3ba59"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "name": "TestTestapi",
+    "constructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

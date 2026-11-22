@@ -1,0 +1,55 @@
+{
+    "buildInfo": {
+        "rustc": {
+            "version": "1.96.1",
+            "commitHash": "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd",
+            "commitDate": "2026-06-26",
+            "channel": "Stable",
+            "host": "aarch64-apple-darwin",
+            "short": "rustc 1.96.1 (31fca3adb 2026-06-26)",
+            "llvmVersion": "22.1"
+        },
+        "contractCrate": {
+            "name": "adder-pt-concrete",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-57-g7926b3ba59"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "name": "TestAdderConcrete",
+    "constructor": {
+        "docs": [
+            "Create the owner account and deploy adder"
+        ],
+        "inputs": [
+            {
+                "name": "code_path",
+                "type": "bytes"
+            }
+        ],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "docs": [
+                "Concrete version of `adder-pt`'s `test_call_add`: no arguments, nothing symbolic."
+            ],
+            "name": "test_call_add_concrete",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "test_call_add_twice_concrete",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

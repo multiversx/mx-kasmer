@@ -3,6 +3,9 @@
 # scratch directories of scripts/experiments/run-pt.sh
 /.pt-runs/
 
+# Intermediate findings
+debug/
+
 __pycache__/
 .pytest_cache/
 .hypothesis/

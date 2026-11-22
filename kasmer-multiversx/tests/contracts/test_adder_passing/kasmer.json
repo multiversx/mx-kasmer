@@ -1,5 +1,0 @@
-{
-  "contracts": [
-    "../../../deps/mx-sdk-rs/contracts/examples/adder"
-  ]
-}

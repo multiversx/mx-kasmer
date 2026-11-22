@@ -1,0 +1,57 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "magic-adder",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-57-g7926b3ba59"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "docs": [
+        "Adder with a planted bug: adding the magic number 987654321 does nothing.",
+        "Contract under test for `adder-pt-magic`."
+    ],
+    "name": "MagicAdder",
+    "constructor": {
+        "inputs": [
+            {
+                "name": "initial_value",
+                "type": "BigUint"
+            }
+        ],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "getSum",
+            "rustMethodName": "sum",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Add desired amount to the storage variable."
+            ],
+            "name": "add",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

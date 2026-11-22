@@ -1,0 +1,41 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "callee",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-57-g7926b3ba59"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "name": "CalleeContract",
+    "constructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "fail_if_neg",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "i64"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "bytes"
+                }
+            ]
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

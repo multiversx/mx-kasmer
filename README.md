@@ -44,6 +44,7 @@ built and tested together.
 | `mx-semantics/` | The K model of the VM and the Python package `kmultiversx` (scenario runner, fuzzing, claim generation). Originally [runtimeverification/mx-semantics](https://github.com/runtimeverification/mx-semantics) |
 | `kasmer-multiversx/` | Lemmas for symbolic execution, the proof driver and the `kasmer` command line tool, in the Python package `kmxwasm`. Depends on `kmultiversx` by path. Originally [runtimeverification/kasmer-multiversx](https://github.com/runtimeverification/kasmer-multiversx) |
 | `deps/` | Version pins: `k_release` (K Framework), `kwasm_release` (vendored Wasm semantics) |
+| `contracts/` | Compiled test contracts and their scenarios, mirroring the layout of `mx-sdk-rs/contracts/` |
 | `scripts/` | Build and test entry points |
 | `Dockerfile` | The development image: K plus Python. No Rust toolchain; contracts are compiled elsewhere |
 
@@ -58,8 +59,8 @@ Where to start reading (`K` stands for `mx-semantics/kmultiversx/src/kmultiversx
 | Lemmas | `kasmer-multiversx/kmxwasm/src/kmxwasm/kdist/mxwasm-semantics/` |
 | Proof loop | `kasmer-multiversx/kmxwasm/src/kmxwasm/property_testing/running.py` |
 | Command line tool | `kasmer-multiversx/kmxwasm/src/kmxwasm/kasmer/` |
-| ESDT system contract model (a Rust contract) | `mx-semantics/src/esdt-system-sc/` |
-| Test contracts of the original case studies (Rust sources; not built here) | `kasmer-multiversx/tests/contracts/`, `mx-semantics/tests/contracts/` |
+| ESDT system contract model (a Rust contract, with its source) | `contracts/esdt-system-sc/` |
+| Test contracts: compiled `.wasm` and ABI, scenarios, `kasmer.json`. Sources are in mx-sdk-rs; see [contracts/README.md](contracts/README.md) | `contracts/` |
 
 ## Building and running the tests
 
@@ -96,23 +97,26 @@ effect on the next `build.sh` or `test.sh`.
 | `scripts/test.sh symbolic -k call_add` | For a single suite, extra arguments go to `pytest` |
 | `scripts/build.sh mxwasm-semantics.haskell` | Build selected targets only. After changing a lemma, this one target is enough and takes about 2 minutes |
 | `scripts/shell.sh` | Shell in the container with `kdist`, `kasmer`, `mandos`, `pytest` on the path |
-| `scripts/experiments/run-pt.sh <test-contract-dir> <contract.wasm>...` | Fuzz and verify a parametric test contract compiled elsewhere; see below |
+| `scripts/experiments/run-pt.sh <test-contract-dir> [<contract.wasm>...]` | Fuzz and verify a parametric test contract; see below |
+| `scripts/conformance.sh <mx-sdk-rs-dir> [list...]` | Run the scenarios of an `mx-sdk-rs` checkout on the VM model; one line per failure, with what it is stuck on |
 | `scripts/update-wasm-semantics.sh <version>` | Replace the vendored Wasm semantics with another upstream release |
 | `scripts/migrations/` | One-off conversions of checked-in K terms (JSON) for an upgrade of the semantics. Kept as a record and as a template for the next upgrade |
 
-### Trying a parametric test from mx-sdk-rs
+### Running a parametric test
 
-With an `mx-sdk-rs` checkout whose contracts are already built (`sc-meta all build`):
+The test contracts in `contracts/parametric-tests/` come compiled:
 
 ```sh
 scripts/experiments/run-pt.sh \
-    ../mx-sdk-rs/contracts/parametric-tests/adder-pt \
-    ../mx-sdk-rs/contracts/examples/adder/output/adder.wasm
+    contracts/parametric-tests/adder-pt \
+    contracts/examples/adder/output/adder.wasm
 ```
 
 This copies the `.wasm` and ABI files to `.pt-runs/adder-pt/`, fuzzes every `test_*` endpoint,
 generates the claims and verifies each one. Verification logs are written next to the copies.
-It is a stopgap that bypasses `kasmer build`, which would try to compile the contracts itself.
+It is a stopgap around `kasmer claims`, which does the same from a `kasmer.json` project directory
+without compiling anything. A test contract from elsewhere, for instance an `mx-sdk-rs` checkout,
+must be built first with `sc-meta all build --wasm-symbols --no-wasm-opt`.
 
 The companion `adder-pt-fail` contains tests that are expected to fail and is the check that
 failures are actually reported: one test fails under fuzzing and verification, another fails for

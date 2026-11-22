@@ -28,7 +28,20 @@ test_semantics() {
     mandos tests/mandos/*.scen.json
     echo "   ok  $(ls tests/mandos/*.scen.json | wc -l) scenarios"
 
+    echo ">> semantics: scenarios of the test contracts in contracts/"
+    local pt="$ROOT/contracts/parametric-tests"
+    local scenarios=("$pt"/{myadder,magic-adder,addercaller,caller}/scenarios/*.scen.json
+                     "$ROOT"/contracts/esdt-system-sc/scenarios/*.scen.json)
+    # (the scenario runner announces every external steps file; not interesting here)
+    mandos "${scenarios[@]}" | { grep -v '^Load external' || true; }
+    echo "   ok  ${#scenarios[@]} scenarios"
+
     [ "${QUICK:-}" = 1 ] && return
+
+    echo ">> semantics: test contract deployment (test-only hooks)"
+    require_targets "scripts/build.sh" mx-semantics.llvm-kasmer
+    mandos --definition kasmer "$pt"/testapi-pt/scenarios/*.scen.json
+    echo "   ok  testapi-pt"
 
     echo ">> semantics: Python tests"
     (cd kmultiversx && pytest src/tests --verbose -p no:cacheprovider "$@")
@@ -39,10 +52,7 @@ test_symbolic() {
     cd "$ROOT/kasmer-multiversx/kmxwasm"
 
     echo ">> symbolic: integration, booster and unit tests"
-    # test_load_project checks for the example contracts that used to come in
-    # through git submodules; deselected until those tests are reworked.
     pytest src/tests/integration src/tests/booster src/tests/unit \
-        --deselect src/tests/integration/test_utils.py::test_load_project \
         --verbose --durations=0 --numprocesses=3 --dist=worksteal -p no:cacheprovider "$@"
 }
 

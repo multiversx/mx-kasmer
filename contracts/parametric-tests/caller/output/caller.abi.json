@@ -1,0 +1,79 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "caller",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-57-g7926b3ba59"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "name": "CallerContract",
+    "constructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "call_other",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "dest",
+                    "type": "Address"
+                },
+                {
+                    "name": "func",
+                    "type": "bytes"
+                },
+                {
+                    "name": "value",
+                    "type": "i64"
+                },
+                {
+                    "name": "to_send",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "call_other_exec_on_dest_ctx",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "dest",
+                    "type": "Address"
+                },
+                {
+                    "name": "func",
+                    "type": "bytes"
+                },
+                {
+                    "name": "value",
+                    "type": "i64"
+                },
+                {
+                    "name": "to_send",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "bytes"
+                }
+            ]
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}
