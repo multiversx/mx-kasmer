@@ -1,0 +1,60 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "addercaller",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-55-g5d844cff90"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "docs": [
+        "One of the simplest smart contracts possible,",
+        "it holds a single variable in storage, which anyone can increment."
+    ],
+    "name": "AdderCaller",
+    "constructor": {
+        "inputs": [
+            {
+                "name": "dest",
+                "type": "Address"
+            }
+        ],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "call_adder",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "call_adder_esdt",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "MYESDT"
+            ],
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

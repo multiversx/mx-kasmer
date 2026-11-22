@@ -1,0 +1,39 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "multisig-pt",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-55-g5d844cff90"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "name": "TestMultisigContract",
+    "constructor": {
+        "inputs": [
+            {
+                "name": "code_path",
+                "type": "bytes"
+            }
+        ],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "test_change_quorum",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "value",
+                    "type": "u32"
+                }
+            ],
+            "outputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {}
+}

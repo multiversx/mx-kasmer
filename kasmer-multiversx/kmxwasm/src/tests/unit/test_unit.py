@@ -8,25 +8,25 @@ from kmxwasm.kasmer.utils import read_contract_target
 TEST_DATA = (
     (
         'string-single-contract',
-        '../../deps/mx-sdk-rs/contracts/examples/adder',
-        '../../deps/mx-sdk-rs/contracts/examples/adder',
+        '../../examples/adder',
+        '../../examples/adder',
         None,
     ),
     (
         'dict-single-contract',
         {
-            'path': '../../deps/mx-sdk-rs/contracts/examples/adder',
+            'path': '../../examples/adder',
         },
-        '../../deps/mx-sdk-rs/contracts/examples/adder',
+        '../../examples/adder',
         None,
     ),
     (
         'dict-multi-contract',
         {
-            'path': '../../deps/mx-sdk-rs/contracts/examples/multisig',
+            'path': '../../examples/multisig',
             'name': 'multisig-full',
         },
-        '../../deps/mx-sdk-rs/contracts/examples/multisig',
+        '../../examples/multisig',
         'multisig-full',
     ),
 )

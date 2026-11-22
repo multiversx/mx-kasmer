@@ -1,0 +1,154 @@
+{
+    "buildInfo": {
+        "rustc": {
+            "version": "1.96.1",
+            "commitHash": "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd",
+            "commitDate": "2026-06-26",
+            "channel": "Stable",
+            "host": "aarch64-apple-darwin",
+            "short": "rustc 1.96.1 (31fca3adb 2026-06-26)",
+            "llvmVersion": "22.1"
+        },
+        "contractCrate": {
+            "name": "crowdfunding",
+            "version": "0.0.0",
+            "gitVersion": "v0.66.2-55-g5d844cff90"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.66.2"
+        }
+    },
+    "name": "Crowdfunding",
+    "constructor": {
+        "inputs": [
+            {
+                "name": "token_identifier",
+                "type": "TokenId"
+            },
+            {
+                "name": "target",
+                "type": "BigUint"
+            },
+            {
+                "name": "deadline",
+                "type": "u64",
+                "specificType": "TimestampMillis"
+            }
+        ],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "fund",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "status",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Status"
+                }
+            ]
+        },
+        {
+            "name": "getCurrentFunds",
+            "rustMethodName": "get_current_funds",
+            "title": "currentFunds",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "getTarget",
+            "rustMethodName": "target",
+            "title": "target",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getDeadline",
+            "rustMethodName": "deadline",
+            "title": "deadline",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getDeposit",
+            "rustMethodName": "deposit",
+            "title": "deposit",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "donor",
+                    "type": "Address"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getCrowdfundingTokenId",
+            "rustMethodName": "cf_token_id",
+            "title": "tokenIdentifier",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "TokenId"
+                }
+            ]
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {
+        "Status": {
+            "type": "enum",
+            "variants": [
+                {
+                    "name": "FundingPeriod",
+                    "discriminant": 0
+                },
+                {
+                    "name": "Successful",
+                    "discriminant": 1
+                },
+                {
+                    "name": "Failed",
+                    "discriminant": 2
+                }
+            ]
+        }
+    }
+}

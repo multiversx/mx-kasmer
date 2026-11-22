@@ -4,10 +4,10 @@
 #
 #   scripts/experiments/run-pt.sh <test-contract-dir> [<contract.wasm>...]
 #
-# Example, with an mx-sdk-rs checkout next to this repository:
+# Example:
 #   scripts/experiments/run-pt.sh \
-#       ../mx-sdk-rs/contracts/parametric-tests/adder-pt \
-#       ../mx-sdk-rs/contracts/examples/adder/output/adder.wasm
+#       contracts/parametric-tests/adder-pt \
+#       contracts/examples/adder/output/adder.wasm
 #
 # <test-contract-dir>/output must contain the test contract's .wasm and .abi.json.
 # The inputs are copied to a scratch directory (.pt-runs/<name>, git-ignored);
