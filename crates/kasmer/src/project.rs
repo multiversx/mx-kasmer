@@ -74,7 +74,12 @@ fn contract_wasm(project_dir: &Path, contract: &Value, file: &Path) -> Result<Pa
         Value::String(path) => (path.as_str(), None),
         Value::Object(o) => match o.get("path").and_then(Value::as_str) {
             Some(path) => (path, o.get("name").and_then(Value::as_str)),
-            None => return Err(Error::Project(format!("{}: contract without \"path\"", file.display()))),
+            None => {
+                return Err(Error::Project(format!(
+                    "{}: contract without \"path\"",
+                    file.display()
+                )));
+            }
         },
         _ => {
             return Err(Error::Project(format!(
@@ -131,11 +136,20 @@ pub fn test_endpoints(dir: &Path) -> Result<Vec<Endpoint>, Error> {
     let abi_path = files_with_suffix(dir, ".abi.json")?
         .into_iter()
         .next()
-        .ok_or_else(|| Error::Project(format!("ABI file not found: {}/output/*.abi.json", dir.display())))?;
+        .ok_or_else(|| {
+            Error::Project(format!(
+                "ABI file not found: {}/output/*.abi.json",
+                dir.display()
+            ))
+        })?;
     let abi = read_json(&abi_path)?;
     let bad = || Error::Project(format!("{}: unexpected ABI structure", abi_path.display()));
     let mut endpoints = Vec::new();
-    for e in abi.get("endpoints").and_then(Value::as_array).ok_or_else(bad)? {
+    for e in abi
+        .get("endpoints")
+        .and_then(Value::as_array)
+        .ok_or_else(bad)?
+    {
         let name = e.get("name").and_then(Value::as_str).ok_or_else(bad)?;
         if !name.starts_with(TEST_PREFIX) {
             continue;
@@ -145,7 +159,12 @@ pub fn test_endpoints(dir: &Path) -> Result<Vec<Endpoint>, Error> {
             .and_then(Value::as_array)
             .ok_or_else(bad)?
             .iter()
-            .map(|i| i.get("type").and_then(Value::as_str).map(str::to_owned).ok_or_else(bad))
+            .map(|i| {
+                i.get("type")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned)
+                    .ok_or_else(bad)
+            })
             .collect::<Result<_, _>>()?;
         endpoints.push(Endpoint {
             name: name.to_owned(),

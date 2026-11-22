@@ -51,13 +51,16 @@ impl<'de> Deserialize<'de> for Sort {
                 f.write_str("a KORE sort")
             }
             fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Sort, A::Error> {
-                let (mut tag, mut name, mut args) = (None::<String>, None::<String>, None::<Vec<Sort>>);
+                let (mut tag, mut name, mut args) =
+                    (None::<String>, None::<String>, None::<Vec<Sort>>);
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         "tag" => set(&mut tag, map.next_value()?, "tag")?,
                         "name" => set(&mut name, map.next_value()?, "name")?,
                         "args" => set(&mut args, map.next_value()?, "args")?,
-                        other => return Err(de::Error::unknown_field(other, &["tag", "name", "args"])),
+                        other => {
+                            return Err(de::Error::unknown_field(other, &["tag", "name", "args"]));
+                        }
                     }
                 }
                 let name: Id = need(name, "name")?.into();

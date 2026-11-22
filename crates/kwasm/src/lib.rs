@@ -51,7 +51,9 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::Parse(e) => write!(f, "invalid Wasm: {e}"),
-            Error::Unsupported { offset, what } => write!(f, "at byte {offset:#x}: not supported: {what}"),
+            Error::Unsupported { offset, what } => {
+                write!(f, "at byte {offset:#x}: not supported: {what}")
+            }
             Error::Build(e) => write!(f, "{e}"),
         }
     }

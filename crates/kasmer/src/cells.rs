@@ -53,8 +53,8 @@ pub fn cell_mut<'a>(config: &'a mut Pattern, name: &str) -> Option<&'a mut Patte
 
 /// Replaces the content of the cell `<name>`.
 pub fn set_cell(config: &mut Pattern, name: &str, value: Pattern) -> Result<(), Error> {
-    let slot =
-        cell_mut(config, name).ok_or_else(|| Error::Project(format!("no cell <{name}> in the configuration")))?;
+    let slot = cell_mut(config, name)
+        .ok_or_else(|| Error::Project(format!("no cell <{name}> in the configuration")))?;
     *slot = value;
     Ok(())
 }
@@ -91,7 +91,12 @@ mod tests {
         assert_eq!(cell_symbol("exit-code"), "Lbl'-LT-'exit-code'-GT-'");
         assert!(k_is_empty(&c));
         assert_eq!(string_cell(&c, "logging"), Some("hi"));
-        set_cell(&mut c, "logging", Pattern::dv(kore::Sort::app0("SortString"), "x")).unwrap();
+        set_cell(
+            &mut c,
+            "logging",
+            Pattern::dv(kore::Sort::app0("SortString"), "x"),
+        )
+        .unwrap();
         assert_eq!(string_cell(&c, "logging"), Some("x"));
         assert!(cell(&c, "nope").is_none());
         assert!(set_cell(&mut c, "nope", Pattern::String(String::new())).is_err());

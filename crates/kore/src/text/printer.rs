@@ -164,7 +164,11 @@ pub fn write_sentence(sentence: &Sentence, out: &mut String) {
             write_attrs(&d.attrs, out);
         }
         Sentence::Symbol(d) => {
-            out.push_str(if d.hooked { "hooked-symbol " } else { "symbol " });
+            out.push_str(if d.hooked {
+                "hooked-symbol "
+            } else {
+                "symbol "
+            });
             write_signature(&d.name, &d.vars, &d.params, &d.sort, out);
             out.push(' ');
             write_attrs(&d.attrs, out);

@@ -49,7 +49,11 @@ fn assert_same(actual: &str, expected: &str, what: &str) {
     if actual == expected {
         return;
     }
-    let at = actual.bytes().zip(expected.bytes()).take_while(|(a, b)| a == b).count();
+    let at = actual
+        .bytes()
+        .zip(expected.bytes())
+        .take_while(|(a, b)| a == b)
+        .count();
     let context = |s: &str| {
         let start = s.floor_char_boundary(at.saturating_sub(80));
         let end = s.ceil_char_boundary((at + 80).min(s.len()));
@@ -74,7 +78,8 @@ fn definitions() {
         .collect();
     assert!(!originals.is_empty(), "no definitions in {}", dir.display());
     for (name, path) in originals {
-        let definition = text::parse_definition(&read(&path)).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let definition =
+            text::parse_definition(&read(&path)).unwrap_or_else(|e| panic!("{name}: {e}"));
         let expected = read(&dir.join(format!("{name}.pyk.kore")));
         assert_same(&definition.to_string(), &expected, &name);
         eprintln!(
@@ -118,7 +123,11 @@ fn configurations() {
         .into_iter()
         .filter(|(n, _)| !n.ends_with(".interpreter"))
         .collect();
-    assert!(!configs.is_empty(), "no configurations in {}", dir.display());
+    assert!(
+        !configs.is_empty(),
+        "no configurations in {}",
+        dir.display()
+    );
     for (name, path) in configs {
         let t = read(&path);
         let j = read(&dir.join(format!("{name}.json")));
@@ -130,7 +139,8 @@ fn configurations() {
 
         let raw = dir.join(format!("{name}.interpreter.kore"));
         if raw.exists() {
-            let from_interpreter = text::parse_pattern(&read(&raw)).unwrap_or_else(|e| panic!("{name}: {e}"));
+            let from_interpreter =
+                text::parse_pattern(&read(&raw)).unwrap_or_else(|e| panic!("{name}: {e}"));
             assert!(
                 from_interpreter == from_text,
                 "{name}: interpreter output differs from pyk's reading of it"

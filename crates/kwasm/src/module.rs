@@ -2,8 +2,8 @@
 
 use kore::symbols::Term;
 use wasmparser::{
-    CompositeInnerType, DataKind, ElementItems, ElementKind, Encoding, ExternalKind, Operator, Parser, Payload,
-    TableInit, TypeRef,
+    CompositeInnerType, DataKind, ElementItems, ElementKind, Encoding, ExternalKind, Operator,
+    Parser, Payload, TableInit, TypeRef,
 };
 
 use crate::Error;
@@ -33,7 +33,9 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
     for payload in Parser::new(0).parse_all(wasm) {
         let payload = payload?;
         match payload {
-            Payload::Version { encoding, range, .. } => {
+            Payload::Version {
+                encoding, range, ..
+            } => {
                 if encoding != Encoding::Module {
                     return Err(Error::unsupported(range.start, "components"));
                 }
@@ -49,22 +51,42 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                         return Err(Error::unsupported(offset, "subtypes"));
                     }
                     let CompositeInnerType::Func(f) = &ty.composite_type.inner else {
-                        return Err(Error::unsupported(offset, "composite types other than functions"));
+                        return Err(Error::unsupported(
+                            offset,
+                            "composite types other than functions",
+                        ));
                     };
-                    let params = f.params().iter().map(|&t| valtype(ast, t, offset)).collect::<R<_>>()?;
-                    let results = f.results().iter().map(|&t| valtype(ast, t, offset)).collect::<R<_>>()?;
-                    let func_type = ast.app("aFuncType", vec![ast.vec_type(params)?, ast.vec_type(results)?])?;
-                    s.types.push(ast.app("aTypeDefn", vec![func_type, ast.empty_id()?])?);
+                    let params = f
+                        .params()
+                        .iter()
+                        .map(|&t| valtype(ast, t, offset))
+                        .collect::<R<_>>()?;
+                    let results = f
+                        .results()
+                        .iter()
+                        .map(|&t| valtype(ast, t, offset))
+                        .collect::<R<_>>()?;
+                    let func_type = ast.app(
+                        "aFuncType",
+                        vec![ast.vec_type(params)?, ast.vec_type(results)?],
+                    )?;
+                    s.types
+                        .push(ast.app("aTypeDefn", vec![func_type, ast.empty_id()?])?);
                 }
             }
             Payload::ImportSection(r) => {
                 for import in r.into_imports_with_offsets() {
                     let (offset, import) = import?;
                     let desc = match import.ty {
-                        TypeRef::Func(t) => ast.app("aFuncDesc", vec![ast.empty_id()?, ast.int(t)])?,
+                        TypeRef::Func(t) => {
+                            ast.app("aFuncDesc", vec![ast.empty_id()?, ast.int(t)])?
+                        }
                         TypeRef::Table(t) => {
                             if t.element_type != wasmparser::RefType::FUNCREF {
-                                return Err(Error::unsupported(offset, "importing a table not of funcref"));
+                                return Err(Error::unsupported(
+                                    offset,
+                                    "importing a table not of funcref",
+                                ));
                             }
                             let limits = table_limits(ast, &t, offset)?;
                             ast.app("aTableDesc", vec![ast.empty_id()?, limits])?
@@ -77,9 +99,18 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                             let global_type = global_type(ast, &g, offset)?;
                             ast.app("aGlobalDesc", vec![ast.empty_id()?, global_type])?
                         }
-                        _ => return Err(Error::unsupported(offset, format!("import of {:?}", import.ty))),
+                        _ => {
+                            return Err(Error::unsupported(
+                                offset,
+                                format!("import of {:?}", import.ty),
+                            ));
+                        }
                     };
-                    let names = vec![ast.wasm_string(import.module), ast.wasm_string(import.name), desc];
+                    let names = vec![
+                        ast.wasm_string(import.module),
+                        ast.wasm_string(import.name),
+                        desc,
+                    ];
                     s.imports.push(ast.app("aImportDefn", names)?);
                 }
             }
@@ -92,18 +123,23 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                 for table in r.into_iter_with_offsets() {
                     let (offset, table) = table?;
                     if let TableInit::Expr(_) = table.init {
-                        return Err(Error::unsupported(offset, "tables with an initializer expression"));
+                        return Err(Error::unsupported(
+                            offset,
+                            "tables with an initializer expression",
+                        ));
                     }
                     let limits = table_limits(ast, &table.ty, offset)?;
                     let rt = reftype(ast, table.ty.element_type, offset)?;
-                    s.tables.push(ast.app("aTableDefn", vec![limits, rt, ast.empty_id()?])?);
+                    s.tables
+                        .push(ast.app("aTableDefn", vec![limits, rt, ast.empty_id()?])?);
                 }
             }
             Payload::MemorySection(r) => {
                 for mem in r.into_iter_with_offsets() {
                     let (offset, mem) = mem?;
                     let limits = memory_limits(ast, &mem, offset)?;
-                    s.mems.push(ast.app("aMemoryDefn", vec![limits, ast.empty_id()?])?);
+                    s.mems
+                        .push(ast.app("aMemoryDefn", vec![limits, ast.empty_id()?])?);
                 }
             }
             Payload::GlobalSection(r) => {
@@ -111,7 +147,8 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                     let (offset, global) = global?;
                     let ty = global_type(ast, &global.ty, offset)?;
                     let init = ast.instrs(expr(ast, global.init_expr.get_operators_reader())?)?;
-                    s.globals.push(ast.app("aGlobalDefn", vec![ty, init, ast.empty_id()?])?);
+                    s.globals
+                        .push(ast.app("aGlobalDefn", vec![ty, init, ast.empty_id()?])?);
                 }
             }
             Payload::ExportSection(r) => {
@@ -122,7 +159,10 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                         ExternalKind::Table => "aExternIdxTable",
                         ExternalKind::Memory => {
                             if export.index != 0 {
-                                return Err(Error::unsupported(offset, "memory index other than 0"));
+                                return Err(Error::unsupported(
+                                    offset,
+                                    "memory index other than 0",
+                                ));
                             }
                             "aExternIdxMemory"
                         }
@@ -148,13 +188,17 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                             offset_expr,
                         } => {
                             let table = ast.int(table_index.unwrap_or(0));
-                            let offset_instrs = ast.instrs(expr(ast, offset_expr.get_operators_reader())?)?;
+                            let offset_instrs =
+                                ast.instrs(expr(ast, offset_expr.get_operators_reader())?)?;
                             ast.app("aElemActive", vec![table, offset_instrs])?
                         }
                     };
                     let (rt, init) = match elem.items {
                         ElementItems::Functions(r) => {
-                            let indices = r.into_iter().map(|i| i.map(Some)).collect::<Result<Vec<_>, _>>()?;
+                            let indices = r
+                                .into_iter()
+                                .map(|i| i.map(Some))
+                                .collect::<Result<Vec<_>, _>>()?;
                             (ast.c("funcref")?, indices)
                         }
                         ElementItems::Expressions(rt, r) => {
@@ -170,7 +214,9 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                         .push(ast.app("aElemDefn", vec![rt, refs, mode, ast.empty_id()?])?);
                 }
             }
-            Payload::DataCountSection { .. } | Payload::CustomSection(_) | Payload::CodeSectionStart { .. } => {}
+            Payload::DataCountSection { .. }
+            | Payload::CustomSection(_)
+            | Payload::CodeSectionStart { .. } => {}
             Payload::CodeSectionEntry(body) => {
                 let mut locals = Vec::new();
                 let mut reader = body.get_locals_reader()?;
@@ -193,19 +239,30 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
                             offset_expr,
                         } => {
                             if memory_index != 0 {
-                                return Err(Error::unsupported(offset, "memory index other than 0"));
+                                return Err(Error::unsupported(
+                                    offset,
+                                    "memory index other than 0",
+                                ));
                             }
-                            let offset_instrs = ast.instrs(expr(ast, offset_expr.get_operators_reader())?)?;
-                            ast.app("aDataModeActive", vec![ast.int(memory_index), offset_instrs])?
+                            let offset_instrs =
+                                ast.instrs(expr(ast, offset_expr.get_operators_reader())?)?;
+                            ast.app(
+                                "aDataModeActive",
+                                vec![ast.int(memory_index), offset_instrs],
+                            )?
                         }
                     };
-                    s.datas.push(ast.app("aDataDefn", vec![ast.bytes(data.data), mode])?);
+                    s.datas
+                        .push(ast.app("aDataDefn", vec![ast.bytes(data.data), mode])?);
                 }
             }
             Payload::End(_) => break,
             other => {
                 let offset = other.as_section().map_or(0, |(_, range)| range.start);
-                return Err(Error::unsupported(offset, "a section the semantics does not support"));
+                return Err(Error::unsupported(
+                    offset,
+                    "a section the semantics does not support",
+                ));
             }
         }
     }
@@ -213,7 +270,11 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
     if s.func_types.len() != s.codes.len() {
         return Err(Error::unsupported(
             wasm.len(),
-            format!("{} functions but {} bodies", s.func_types.len(), s.codes.len()),
+            format!(
+                "{} functions but {} bodies",
+                s.func_types.len(),
+                s.codes.len()
+            ),
         ));
     }
     let mut funcs = Vec::new();
@@ -228,7 +289,10 @@ pub(crate) fn module(ast: &Ast, wasm: &[u8], filename: Option<&str>) -> R<Term> 
         Some(f) => ast.string(f),
         None => ast.c(".String")?,
     };
-    let meta = ast.app("moduleMeta", vec![ast.empty_id()?, ast.c(".Map")?, filename])?;
+    let meta = ast.app(
+        "moduleMeta",
+        vec![ast.empty_id()?, ast.c(".Map")?, filename],
+    )?;
     let args = vec![
         ast.defns(s.types)?,
         ast.defns(funcs)?,
@@ -305,5 +369,8 @@ fn global_type(ast: &Ast, g: &wasmparser::GlobalType, offset: u64) -> R<Term> {
         return Err(Error::unsupported(offset, "shared globals"));
     }
     let mutability = ast.c(if g.mutable { "mutVar" } else { "mutConst" })?;
-    ast.app("aGlobalType", vec![mutability, valtype(ast, g.content_type, offset)?])
+    ast.app(
+        "aGlobalType",
+        vec![mutability, valtype(ast, g.content_type, offset)?],
+    )
 }

@@ -35,13 +35,19 @@ impl<'de> Deserialize<'de> for TermOwned {
                 f.write_str(r#"a KORE JSON term: {"format": "KORE", "version": 1, "term": ...}"#)
             }
             fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<TermOwned, A::Error> {
-                let (mut format, mut version, mut term) = (None::<String>, None::<u64>, None::<Pattern>);
+                let (mut format, mut version, mut term) =
+                    (None::<String>, None::<u64>, None::<Pattern>);
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         "format" => set(&mut format, map.next_value()?, "format")?,
                         "version" => set(&mut version, map.next_value()?, "version")?,
                         "term" => set(&mut term, map.next_value()?, "term")?,
-                        other => return Err(de::Error::unknown_field(other, &["format", "version", "term"])),
+                        other => {
+                            return Err(de::Error::unknown_field(
+                                other,
+                                &["format", "version", "term"],
+                            ));
+                        }
                     }
                 }
                 if need::<_, A::Error>(format, "format")? != "KORE" {

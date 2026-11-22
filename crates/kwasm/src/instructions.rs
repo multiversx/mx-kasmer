@@ -5,7 +5,9 @@
 //! The instructions pykwasm does not support are rejected here too.
 
 use kore::symbols::Term;
-use wasmparser::{BlockType, HeapType, MemArg, MemArgTarget, Operator, OperatorsReader, RefType, ValType};
+use wasmparser::{
+    BlockType, HeapType, MemArg, MemArgTarget, Operator, OperatorsReader, RefType, ValType,
+};
 
 use crate::Error;
 use crate::ast::{Ast, R};
@@ -35,7 +37,10 @@ fn blocktype(ast: &Ast, bt: BlockType, offset: u64) -> R<Term> {
     match bt {
         BlockType::Empty => ast.vec_type(vec![]),
         BlockType::Type(t) => ast.vec_type(vec![valtype(ast, t, offset)?]),
-        BlockType::FuncType(_) => Err(Error::unsupported(offset, "block types given by a type index")),
+        BlockType::FuncType(_) => Err(Error::unsupported(
+            offset,
+            "block types given by a type index",
+        )),
     }
 }
 
@@ -87,7 +92,10 @@ pub(crate) fn expr(ast: &Ast, mut ops: OperatorsReader) -> R<Vec<Term>> {
             Operator::End => {
                 let Some(frame) = stack.pop() else {
                     if !ops.eof() {
-                        return Err(Error::unsupported(after, "bytes after the end of an expression"));
+                        return Err(Error::unsupported(
+                            after,
+                            "bytes after the end of an expression",
+                        ));
                     }
                     return Ok(current);
                 };
@@ -100,7 +108,10 @@ pub(crate) fn expr(ast: &Ast, mut ops: OperatorsReader) -> R<Vec<Term>> {
                             Some(then) => (then, body),
                             None => (body, Vec::new()),
                         };
-                        ast.app("aIf", vec![frame.blocktype, ast.instrs(then)?, ast.instrs(els)?])?
+                        ast.app(
+                            "aIf",
+                            vec![frame.blocktype, ast.instrs(then)?, ast.instrs(els)?],
+                        )?
                     }
                 };
                 current.push(ast.instr_with_pos(instr, frame.offset, after - frame.offset)?);
@@ -179,11 +190,18 @@ fn plain(ast: &Ast, op: Operator, offset: u64) -> R<Term> {
         // Tables
         O::TableGet { table } => idx("aTable.get", table),
         O::TableSet { table } => idx("aTable.set", table),
-        O::TableInit { elem_index, table } => ast.app("aTable.init", vec![int(table.into()), int(elem_index.into())]),
+        O::TableInit { elem_index, table } => ast.app(
+            "aTable.init",
+            vec![int(table.into()), int(elem_index.into())],
+        ),
         O::ElemDrop { elem_index } => idx("aElem.drop", elem_index),
-        O::TableCopy { dst_table, src_table } => {
-            ast.app("aTable.copy", vec![int(dst_table.into()), int(src_table.into())])
-        }
+        O::TableCopy {
+            dst_table,
+            src_table,
+        } => ast.app(
+            "aTable.copy",
+            vec![int(dst_table.into()), int(src_table.into())],
+        ),
         O::TableGrow { table } => idx("aTable.grow", table),
         O::TableSize { table } => idx("aTable.size", table),
         O::TableFill { table } => idx("aTable.fill", table),
@@ -236,13 +254,21 @@ fn plain(ast: &Ast, op: Operator, offset: u64) -> R<Term> {
         O::RefFunc { function_index } => idx("aRef.func", function_index),
 
         // Constants. Integers are written unsigned, as pykwasm writes them.
-        O::I32Const { value } => ast.app("aIConst", vec![ast.c("i32")?, int((value as u32).into())]),
+        O::I32Const { value } => {
+            ast.app("aIConst", vec![ast.c("i32")?, int((value as u32).into())])
+        }
         O::I64Const { value } => ast.app("aIConst", vec![ast.c("i64")?, int(value as u64)]),
         O::F32Const { value } => ast.app(
             "aFConst",
-            vec![ast.c("f32")?, ast.float(f32::from_bits(value.bits()).into())],
+            vec![
+                ast.c("f32")?,
+                ast.float(f32::from_bits(value.bits()).into()),
+            ],
         ),
-        O::F64Const { value } => ast.app("aFConst", vec![ast.c("f64")?, ast.float(f64::from_bits(value.bits()))]),
+        O::F64Const { value } => ast.app(
+            "aFConst",
+            vec![ast.c("f64")?, ast.float(f64::from_bits(value.bits()))],
+        ),
 
         // Tests and comparisons
         O::I32Eqz => t("aTestOp", "i32", "aEqz"),

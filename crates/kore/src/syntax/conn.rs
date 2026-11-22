@@ -131,6 +131,10 @@ impl Conn {
             Conn::Ceil | Conn::Floor => (2, Binder::None, Exactly(1)),
             Conn::Equals | Conn::In => (2, Binder::None, Exactly(2)),
         };
-        Shape { sorts, binder, args }
+        Shape {
+            sorts,
+            binder,
+            args,
+        }
     }
 }

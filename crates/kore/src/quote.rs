@@ -77,10 +77,14 @@ pub fn dequote(s: &str) -> Result<String, String> {
         let mut code: u32 = 0;
         for _ in 0..digits {
             let d = chars.next().ok_or("incomplete code point")?;
-            let v = d.to_digit(16).ok_or_else(|| format!("expected hex digit, got: {d}"))?;
+            let v = d
+                .to_digit(16)
+                .ok_or_else(|| format!("expected hex digit, got: {d}"))?;
             code = code.checked_mul(16).ok_or("code point out of range")? + v;
         }
-        out.push(char::from_u32(code).ok_or_else(|| format!("not a Unicode scalar value: {code:#x}"))?);
+        out.push(
+            char::from_u32(code).ok_or_else(|| format!("not a Unicode scalar value: {code:#x}"))?,
+        );
     }
     Ok(out)
 }

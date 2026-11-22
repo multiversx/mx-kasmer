@@ -3,7 +3,11 @@
 use serde::de;
 
 /// Stores a field, rejecting duplicates.
-pub(crate) fn set<T, E: de::Error>(slot: &mut Option<T>, value: T, name: &'static str) -> Result<(), E> {
+pub(crate) fn set<T, E: de::Error>(
+    slot: &mut Option<T>,
+    value: T,
+    name: &'static str,
+) -> Result<(), E> {
     if slot.replace(value).is_some() {
         return Err(E::duplicate_field(name));
     }

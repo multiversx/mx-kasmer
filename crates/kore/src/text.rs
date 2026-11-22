@@ -102,7 +102,9 @@ mod tests {
         round_trip(r"dotk{}()");
         round_trip(r"\top{SortGeneratedTopCell{}}()");
         round_trip(r"\and{S}(\not{S}(\bottom{S}()), \or{S}(), \or{S}(A : S, B : S, C : S))");
-        round_trip(r"\exists{S}(X : SortInt{}, \equals{SortInt{}, S}(X : SortInt{}, Y : SortInt{}))");
+        round_trip(
+            r"\exists{S}(X : SortInt{}, \equals{SortInt{}, S}(X : SortInt{}, Y : SortInt{}))",
+        );
         round_trip(r"\mu{}(@X : S, \nu{}(@Y : S, @X : S))");
         round_trip(r"\ceil{SortInt{}, S}(X : SortInt{})");
         round_trip(r"\floor{SortInt{}, S}(X : SortInt{})");
@@ -110,7 +112,9 @@ mod tests {
         round_trip(r"\rewrites{S}(\next{S}(A : S), B : S)");
         round_trip(r"\implies{S}(A : S, \iff{S}(A : S, B : S))");
         round_trip(r"\forall{S}(X : S, X : S)");
-        round_trip(r"\left-assoc{}(Lbl'Unds'Map'Unds'{}(A : SortMap{}, B : SortMap{}, C : SortMap{}))");
+        round_trip(
+            r"\left-assoc{}(Lbl'Unds'Map'Unds'{}(A : SortMap{}, B : SortMap{}, C : SortMap{}))",
+        );
         round_trip(r"\right-assoc{}(\foo{}())");
         round_trip(r#""a\"b\\c\n\x00\u0100""#);
         round_trip(r#"\dv{SortBytes{}}("\x00\xff")"#);

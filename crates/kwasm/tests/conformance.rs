@@ -34,7 +34,11 @@ fn read(path: &Path) -> String {
 }
 
 fn first_difference(actual: &str, expected: &str) -> String {
-    let at = actual.bytes().zip(expected.bytes()).take_while(|(a, b)| a == b).count();
+    let at = actual
+        .bytes()
+        .zip(expected.bytes())
+        .take_while(|(a, b)| a == b)
+        .count();
     let context = |s: &str| {
         let start = s.floor_char_boundary(at.saturating_sub(100));
         let end = s.ceil_char_boundary((at + 100).min(s.len()));
@@ -53,8 +57,10 @@ fn first_difference(actual: &str, expected: &str) -> String {
 fn contracts() {
     let Some(dir) = corpus() else { return };
     // The reference terms were made with the symbols of this definition.
-    let definition = kore::text::parse_definition(&read(&dir.join("definitions/mx-semantics-llvm-kasmer.pyk.kore")))
-        .expect("definition parses");
+    let definition = kore::text::parse_definition(&read(
+        &dir.join("definitions/mx-semantics-llvm-kasmer.pyk.kore"),
+    ))
+    .expect("definition parses");
     let symbols = Symbols::new(&definition);
 
     let index = read(&dir.join("wasm/index.tsv"));
@@ -65,7 +71,8 @@ fn contracts() {
         let expected = read(&dir.join("wasm").join(kore_file));
 
         let start = Instant::now();
-        let term = kwasm::module_term(&wasm, Some(wasm_path), &symbols).unwrap_or_else(|e| panic!("{wasm_path}: {e}"));
+        let term = kwasm::module_term(&wasm, Some(wasm_path), &symbols)
+            .unwrap_or_else(|e| panic!("{wasm_path}: {e}"));
         let elapsed = start.elapsed();
         assert_eq!(term.sort, kore::Sort::app0("SortModuleDecl"));
         let actual = term.pattern.to_string();
@@ -87,8 +94,10 @@ fn contracts() {
 #[test]
 fn wat_modules() {
     let Some(dir) = corpus() else { return };
-    let definition = kore::text::parse_definition(&read(&dir.join("definitions/mx-semantics-llvm-kasmer.pyk.kore")))
-        .expect("definition parses");
+    let definition = kore::text::parse_definition(&read(
+        &dir.join("definitions/mx-semantics-llvm-kasmer.pyk.kore"),
+    ))
+    .expect("definition parses");
     let symbols = Symbols::new(&definition);
 
     let wat_dir = dir.join("wasm/wat");
@@ -105,18 +114,26 @@ fn wat_modules() {
     names.sort();
     assert_eq!(
         names.len(),
-        fs::read_dir(root().join("crates/kwasm/tests/wat")).unwrap().count() - 1,
+        fs::read_dir(root().join("crates/kwasm/tests/wat"))
+            .unwrap()
+            .count()
+            - 1,
         "one per .wat"
     );
     for name in names {
         let wasm = fs::read(wat_dir.join(format!("{name}.wasm"))).unwrap();
         let expected = read(&wat_dir.join(format!("{name}.kore")));
-        let term = kwasm::module_term(&wasm, None, &symbols).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let term =
+            kwasm::module_term(&wasm, None, &symbols).unwrap_or_else(|e| panic!("{name}: {e}"));
         let actual = term.pattern.to_string();
         if actual != expected {
             panic!("{name}: {}", first_difference(&actual, &expected));
         }
-        eprintln!("{name}.wat: {} bytes of Wasm, {} of KORE", wasm.len(), actual.len());
+        eprintln!(
+            "{name}.wat: {} bytes of Wasm, {} of KORE",
+            wasm.len(),
+            actual.len()
+        );
     }
 }
 
@@ -124,8 +141,10 @@ fn wat_modules() {
 #[test]
 fn unsupported() {
     let Some(dir) = corpus() else { return };
-    let definition = kore::text::parse_definition(&read(&dir.join("definitions/mx-semantics-llvm-kasmer.pyk.kore")))
-        .expect("definition parses");
+    let definition = kore::text::parse_definition(&read(
+        &dir.join("definitions/mx-semantics-llvm-kasmer.pyk.kore"),
+    ))
+    .expect("definition parses");
     let symbols = Symbols::new(&definition);
     for (wat, expected) in [
         (
@@ -142,7 +161,10 @@ fn unsupported() {
             "multi-memory",
         ),
         ("(module (func (param v128)))", "v128"),
-        ("(module (rec (type (func)) (type (func))))", "recursive types"),
+        (
+            "(module (rec (type (func)) (type (func))))",
+            "recursive types",
+        ),
         (
             "(module (type $t (func (param i32) (result i32))) (func (param i32) (result i32) local.get 0 block (type $t) end))",
             "type index",

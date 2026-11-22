@@ -130,9 +130,15 @@ impl Pattern {
     pub fn desugar_assoc(self) -> Pattern {
         self.map_bottom_up(|p| match p {
             Pattern::Assoc(Assoc { dir, app }) => {
-                let App { symbol, sorts, args } = app;
+                let App {
+                    symbol,
+                    sorts,
+                    args,
+                } = app;
                 let args = args.into_vec();
-                let join = |a: Pattern, b: Pattern| Pattern::app(symbol.clone(), sorts.clone(), vec![a, b]);
+                let join = |a: Pattern, b: Pattern| {
+                    Pattern::app(symbol.clone(), sorts.clone(), vec![a, b])
+                };
                 match dir {
                     AssocDir::Left => {
                         let mut it = args.into_iter();
@@ -221,8 +227,8 @@ const TAGS: &[&str] = &[
 ];
 
 const FIELDS: &[&str] = &[
-    "tag", "name", "symbol", "var", "value", "sort", "argSort", "varSort", "arg", "first", "second", "source", "dest",
-    "args", "patterns", "argss", "sorts",
+    "tag", "name", "symbol", "var", "value", "sort", "argSort", "varSort", "arg", "first",
+    "second", "source", "dest", "args", "patterns", "argss", "sorts",
 ];
 
 /// The fields a pattern object may have. Each field name has one type in every kind of pattern,
@@ -303,7 +309,8 @@ impl PatternFields {
             "LeftAssoc" => Pattern::Assoc(Assoc::from_fields(AssocDir::Left, f)?),
             "RightAssoc" => Pattern::Assoc(Assoc::from_fields(AssocDir::Right, f)?),
             _ => {
-                let conn = Conn::from_json_tag(&tag).ok_or_else(|| E::unknown_variant(&tag, TAGS))?;
+                let conn =
+                    Conn::from_json_tag(&tag).ok_or_else(|| E::unknown_variant(&tag, TAGS))?;
                 Pattern::Ml(Ml::from_fields(conn, f)?)
             }
         })

@@ -131,7 +131,11 @@ pub fn inj(from: Sort, to: Sort, pattern: Pattern) -> Pattern {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum BuildError {
     UnknownLabel(String),
-    Arity { symbol: Id, expected: usize, found: usize },
+    Arity {
+        symbol: Id,
+        expected: usize,
+        found: usize,
+    },
 }
 
 impl fmt::Display for BuildError {
@@ -178,7 +182,8 @@ impl Symbols {
     /// The symbol of a label, if the definition declares it. Surrounding spaces are ignored, as
     /// the K compiler ignores them.
     pub fn symbol(&self, label: &str) -> Option<(&Id, &Signature)> {
-        self.by_name.get_key_value(label_to_symbol(label.trim())?.as_str())
+        self.by_name
+            .get_key_value(label_to_symbol(label.trim())?.as_str())
     }
 
     /// Applies the symbol of `label` to the arguments, injecting each into its parameter sort.
@@ -193,7 +198,11 @@ impl Symbols {
                 found: args.len(),
             });
         }
-        let args = args.into_iter().zip(&sig.params).map(|(a, p)| a.into_sort(p)).collect();
+        let args = args
+            .into_iter()
+            .zip(&sig.params)
+            .map(|(a, p)| a.into_sort(p))
+            .collect();
         Ok(Term {
             pattern: Pattern::app(name.clone(), vec![], args),
             sort: sig.sort.clone(),
@@ -218,7 +227,10 @@ mod tests {
             "Lbl'UndsUndsUnds'WASM-COMMON-SYNTAX'Unds'Instrs'Unds'Instr'Unds'Instrs"
         );
         assert_eq!(label_to_symbol("<k>").unwrap(), "Lbl'-LT-'k'-GT-'");
-        assert_eq!(label_to_symbol("_^%Int__").unwrap(), "Lbl'UndsXor-Perc'Int'UndsUnds'");
+        assert_eq!(
+            label_to_symbol("_^%Int__").unwrap(),
+            "Lbl'UndsXor-Perc'Int'UndsUnds'"
+        );
         assert_eq!(label_to_symbol("_&Int_").unwrap(), "Lbl'UndsAnd-'Int'Unds'");
         assert_eq!(label_to_symbol("é"), None);
     }
@@ -252,7 +264,10 @@ endmodule []"#,
                 found: 0
             })
         );
-        assert!(matches!(s.apply("nope", vec![]), Err(BuildError::UnknownLabel(_))));
+        assert!(matches!(
+            s.apply("nope", vec![]),
+            Err(BuildError::UnknownLabel(_))
+        ));
         assert!(s.symbol("inj").is_none(), "parametric symbols are left out");
     }
 }

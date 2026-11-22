@@ -74,7 +74,9 @@ impl Interpreter {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| Error::Interpreter(format!("cannot run {}: {e}", self.program.display())))?;
+            .map_err(|e| {
+                Error::Interpreter(format!("cannot run {}: {e}", self.program.display()))
+            })?;
         let mut stdin = child.stdin.take().expect("stdin is piped");
         // Written from another thread: the interpreter may start writing before it has read
         // everything, and both pipes have limited buffers.
@@ -84,7 +86,12 @@ impl Interpreter {
             (writer.join().expect("writer thread"), output)
         });
         let output = match output {
-            (_, Err(e)) => return Err(Error::Interpreter(format!("{}: {e}", self.program.display()))),
+            (_, Err(e)) => {
+                return Err(Error::Interpreter(format!(
+                    "{}: {e}",
+                    self.program.display()
+                )));
+            }
             // A failed write means the interpreter exited without reading all of it: it rejected
             // the input, and says why on stderr.
             (_, Ok(o)) => o,

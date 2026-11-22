@@ -56,8 +56,12 @@ pub fn arg_types(endpoint: &Endpoint) -> Result<Vec<ArgType>, Error> {
         .inputs
         .iter()
         .map(|t| {
-            ArgType::from_abi(t)
-                .ok_or_else(|| Error::Project(format!("{}: cannot generate arguments of type {t}", endpoint.name)))
+            ArgType::from_abi(t).ok_or_else(|| {
+                Error::Project(format!(
+                    "{}: cannot generate arguments of type {t}",
+                    endpoint.name
+                ))
+            })
         })
         .collect()
 }
@@ -107,7 +111,11 @@ impl Template {
 
 /// The steps of one test call: `setExitCode 1`, the call, a check that it succeeded,
 /// `setExitCode 0`. Arguments are big-endian numbers, with no leading zeros.
-pub fn call_steps<B: AsRef<[u8]>>(builder: &Builder, endpoint: &str, args: &[B]) -> Result<Pattern, Error> {
+pub fn call_steps<B: AsRef<[u8]>>(
+    builder: &Builder,
+    endpoint: &str,
+    args: &[B],
+) -> Result<Pattern, Error> {
     let steps = vec![
         builder.set_exit_code(1)?,
         builder.call_tx(
@@ -189,7 +197,11 @@ pub fn fuzz_endpoint(
 ) -> Result<Outcome, Error> {
     let types = arg_types(endpoint)?;
     let builder = Builder::new(definition.symbols());
-    let examples = if types.is_empty() { 1 } else { options.examples };
+    let examples = if types.is_empty() {
+        1
+    } else {
+        options.examples
+    };
     let next = AtomicUsize::new(0);
     let stop = AtomicBool::new(false);
     // The failure with the lowest index wins. Examples are started in order, so every example
@@ -201,7 +213,9 @@ pub fn fuzz_endpoint(
     let run_example = |index: usize| -> Result<Option<Failure>, Error> {
         let args = example_args(options.seed, index, &types);
         let steps = call_steps(&builder, &endpoint.name, &args)?;
-        let output = definition.interpreter().run_text(&template.fill(&steps), None)?;
+        let output = definition
+            .interpreter()
+            .run_text(&template.fill(&steps), None)?;
         if output.exit_code == Some(0) {
             return Ok(None);
         }
@@ -337,7 +351,9 @@ mod tests {
     fn values_fit() {
         for t in [ArgType::BigUint, ArgType::U32, ArgType::U64] {
             for i in 0..2000 {
-                let [v] = &example_args(7, i, &[t])[..] else { panic!() };
+                let [v] = &example_args(7, i, &[t])[..] else {
+                    panic!()
+                };
                 assert!(v.first() != Some(&0), "{t:?} {v:?}: leading zero");
                 assert!(v.len() * 8 <= t.bits() as usize, "{t:?} {v:?}: too wide");
             }

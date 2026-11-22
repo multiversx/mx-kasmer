@@ -103,7 +103,10 @@ impl<'a> Ast<'a> {
     }
 
     pub fn instr_with_pos(&self, instr: Term, offset: u64, length: u64) -> R<Term> {
-        self.app("aInstrWithPos", vec![instr, self.int(offset), self.int(length)])
+        self.app(
+            "aInstrWithPos",
+            vec![instr, self.int(offset), self.int(length)],
+        )
     }
 
     /// `label(type, op)`, the shape of most numeric instructions: `aIBinOp(i32, intAdd)`.
@@ -137,7 +140,11 @@ pub(crate) fn python_float_repr(x: f64) -> String {
         } else if point >= n {
             format!("{digits}{}.0", "0".repeat((point - n) as usize))
         } else {
-            format!("{}.{}", &digits[..point as usize], &digits[point as usize..])
+            format!(
+                "{}.{}",
+                &digits[..point as usize],
+                &digits[point as usize..]
+            )
         }
     } else {
         let mant = if n == 1 {

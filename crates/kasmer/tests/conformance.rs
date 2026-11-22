@@ -20,7 +20,12 @@ use kasmer::{LlvmDefinition, mandos};
 use kore::symbols::Symbols;
 use serde_json::Value;
 
-const PROJECTS: [&str; 4] = ["adder-pt", "adder-pt-fail", "crowdfunding-pt", "multisig-pt"];
+const PROJECTS: [&str; 4] = [
+    "adder-pt",
+    "adder-pt-fail",
+    "crowdfunding-pt",
+    "multisig-pt",
+];
 
 /// The name of the ESDT system contract in the reference runtime configuration: its path.
 const ESDT_NAME: &str = "contracts/esdt-system-sc/output/esdt-system-sc.wasm";
@@ -50,7 +55,9 @@ fn corpus() -> Option<PathBuf> {
 
 fn definition() -> Option<LlvmDefinition> {
     let Some(dir) = std::env::var_os("KASMER_LLVM_DEFINITION") else {
-        eprintln!("KASMER_LLVM_DEFINITION not set; not running the interpreter (scripts/llvm-kasmer-host.sh)");
+        eprintln!(
+            "KASMER_LLVM_DEFINITION not set; not running the interpreter (scripts/llvm-kasmer-host.sh)"
+        );
         return None;
     };
     Some(LlvmDefinition::load(dir).unwrap())
@@ -61,7 +68,11 @@ fn read(path: &Path) -> String {
 }
 
 fn first_difference(actual: &str, expected: &str) -> String {
-    let at = actual.bytes().zip(expected.bytes()).take_while(|(a, b)| a == b).count();
+    let at = actual
+        .bytes()
+        .zip(expected.bytes())
+        .take_while(|(a, b)| a == b)
+        .count();
     let context = |s: &str| {
         let start = s.floor_char_boundary(at.saturating_sub(150));
         let end = s.ceil_char_boundary((at + 150).min(s.len()));
@@ -112,9 +123,15 @@ fn call_steps_match() {
     let mut n = 0;
     for project in PROJECTS {
         for call in calls(&corpus, project) {
-            let steps = call_steps(&builder, &call.endpoint, &call.args).unwrap().to_string();
+            let steps = call_steps(&builder, &call.endpoint, &call.args)
+                .unwrap()
+                .to_string();
             if steps != call.steps {
-                panic!("{project} {}: {}", call.endpoint, first_difference(&steps, &call.steps));
+                panic!(
+                    "{project} {}: {}",
+                    call.endpoint,
+                    first_difference(&steps, &call.steps)
+                );
             }
             n += 1;
         }
@@ -149,7 +166,9 @@ fn runtime() {
         ..Contract::esdt_system_sc()
     };
     let t = Instant::now();
-    let runtime = setup::runtime_config(&definition, &esdt).unwrap().to_string();
+    let runtime = setup::runtime_config(&definition, &esdt)
+        .unwrap()
+        .to_string();
     eprintln!("runtime configuration in {:?}", t.elapsed());
     let expected = read(&corpus.join("kasmer/runtime.kore"));
     if runtime != expected {
@@ -185,11 +204,17 @@ fn templates_and_exit_codes() {
         let expected = read(&corpus.join("kasmer").join(project).join("template.kore"));
         let actual = template.with_variable();
         if actual != expected {
-            panic!("{project} template: {}", first_difference(&actual, &expected));
+            panic!(
+                "{project} template: {}",
+                first_difference(&actual, &expected)
+            );
         }
         for call in calls(&corpus, project) {
             let steps = call_steps(&builder, &call.endpoint, &call.args).unwrap();
-            let output = definition.interpreter().run_text(&template.fill(&steps), None).unwrap();
+            let output = definition
+                .interpreter()
+                .run_text(&template.fill(&steps), None)
+                .unwrap();
             assert_eq!(
                 output.exit_code,
                 Some(call.exit_code),

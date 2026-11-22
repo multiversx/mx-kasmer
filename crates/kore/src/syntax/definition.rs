@@ -9,16 +9,22 @@ pub struct Definition {
 
 impl Definition {
     pub fn axioms(&self) -> impl Iterator<Item = &Axiom> {
-        self.modules.iter().flat_map(|m| &m.sentences).filter_map(|s| match s {
-            Sentence::Axiom(a) => Some(a),
-            _ => None,
-        })
+        self.modules
+            .iter()
+            .flat_map(|m| &m.sentences)
+            .filter_map(|s| match s {
+                Sentence::Axiom(a) => Some(a),
+                _ => None,
+            })
     }
 
     pub fn symbol_decls(&self) -> impl Iterator<Item = &SymbolDecl> {
-        self.modules.iter().flat_map(|m| &m.sentences).filter_map(|s| match s {
-            Sentence::Symbol(d) => Some(d),
-            _ => None,
-        })
+        self.modules
+            .iter()
+            .flat_map(|m| &m.sentences)
+            .filter_map(|s| match s {
+                Sentence::Symbol(d) => Some(d),
+                _ => None,
+            })
     }
 }

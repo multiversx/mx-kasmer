@@ -29,7 +29,8 @@ pub const TEST_CONTRACT: &str = "k-test";
 pub const DEPLOY_GAS: u64 = 5_000_000_000_000;
 
 /// The ESDT system smart contract, `contracts/esdt-system-sc`.
-pub const ESDT_SYSTEM_SC_WASM: &[u8] = include_bytes!("../../../contracts/esdt-system-sc/output/esdt-system-sc.wasm");
+pub const ESDT_SYSTEM_SC_WASM: &[u8] =
+    include_bytes!("../../../contracts/esdt-system-sc/output/esdt-system-sc.wasm");
 /// The name stored in its module.
 pub const ESDT_SYSTEM_SC_NAME: &str = "esdt-system-sc.wasm";
 /// Its address: `0x000000000000000000010000000000000000000000000000000000000002ffff`.
@@ -69,9 +70,11 @@ impl Contract {
 
     /// The module, as a term of sort `ModuleDecl`.
     pub fn module(&self, definition: &LlvmDefinition) -> Result<Term, Error> {
-        kwasm::module_term(&self.wasm, Some(&self.name), definition.symbols()).map_err(|source| Error::Wasm {
-            name: self.name.clone(),
-            source,
+        kwasm::module_term(&self.wasm, Some(&self.name), definition.symbols()).map_err(|source| {
+            Error::Wasm {
+                name: self.name.clone(),
+                source,
+            }
         })
     }
 }
@@ -83,12 +86,18 @@ pub fn empty_config(definition: &LlvmDefinition) -> Result<Pattern, Error> {
     let pgm = Term::dv(kore::Sort::app0("SortKConfigVar"), "$PGM");
     let vars = b.map(vec![(pgm, b.app(".List{\"mandosSteps\"}", vec![])?)])?;
     let init = b.app("initGeneratedTopCell", vec![vars])?;
-    let output = definition.interpreter().run_text(&init.pattern.to_string(), Some(0))?;
+    let output = definition
+        .interpreter()
+        .run_text(&init.pattern.to_string(), Some(0))?;
     Ok(output.config()?.desugar_assoc())
 }
 
 /// Runs a configuration to the end, and checks that all of `<k>` was consumed.
-pub fn run_to_completion(definition: &LlvmDefinition, config: &Pattern, what: &str) -> Result<Pattern, Error> {
+pub fn run_to_completion(
+    definition: &LlvmDefinition,
+    config: &Pattern,
+    what: &str,
+) -> Result<Pattern, Error> {
     let (_, config) = definition.interpreter().run(config)?;
     if !cells::k_is_empty(&config) {
         return Err(stuck(&config, what));
@@ -106,7 +115,10 @@ pub(crate) fn stuck(config: &Pattern, what: &str) -> Error {
 }
 
 /// The empty configuration plus the ESDT system smart contract.
-pub fn runtime_config(definition: &LlvmDefinition, esdt_system_sc: &Contract) -> Result<Pattern, Error> {
+pub fn runtime_config(
+    definition: &LlvmDefinition,
+    esdt_system_sc: &Contract,
+) -> Result<Pattern, Error> {
     let b = Builder::new(definition.symbols());
     let mut config = empty_config(definition)?;
     let set = b.set_account(
@@ -118,7 +130,11 @@ pub fn runtime_config(definition: &LlvmDefinition, esdt_system_sc: &Contract) ->
         b.map(vec![])?,
     )?;
     set_cell(&mut config, "k", b.kseq(vec![set]).pattern)?;
-    run_to_completion(definition, &config, "setting up the ESDT system smart contract")
+    run_to_completion(
+        definition,
+        &config,
+        "setting up the ESDT system smart contract",
+    )
 }
 
 /// Deploys the test contract into a runtime configuration. Returns the final configuration, with
@@ -158,7 +174,13 @@ mod tests {
 
     #[test]
     fn esdt_address() {
-        let hex: String = ESDT_SYSTEM_SC_ADDRESS.iter().map(|b| format!("{b:02x}")).collect();
-        assert_eq!(hex, "000000000000000000010000000000000000000000000000000000000002ffff");
+        let hex: String = ESDT_SYSTEM_SC_ADDRESS
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        assert_eq!(
+            hex,
+            "000000000000000000010000000000000000000000000000000000000002ffff"
+        );
     }
 }

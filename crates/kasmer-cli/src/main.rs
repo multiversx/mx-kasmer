@@ -97,7 +97,9 @@ fn run(cli: Cli) -> Result<bool, Error> {
                 deployed.to_string()
             };
             match output {
-                Some(path) => std::fs::write(&path, text).map_err(|source| Error::Io { path, source })?,
+                Some(path) => {
+                    std::fs::write(&path, text).map_err(|source| Error::Io { path, source })?
+                }
                 None => println!("{text}"),
             }
             Ok(true)
@@ -159,15 +161,25 @@ fn fuzz_all(
         let t = Instant::now();
         match fuzz::fuzz_endpoint(definition, &template, endpoint, options)? {
             Outcome::Passed { examples } => {
-                println!("{}: passed, {examples} calls ({:.1?})", endpoint.name, t.elapsed());
+                println!(
+                    "{}: passed, {examples} calls ({:.1?})",
+                    endpoint.name,
+                    t.elapsed()
+                );
             }
             Outcome::Failed(f) => {
                 failed += 1;
-                println!("{}: FAILED at call {} ({:.1?})", endpoint.name, f.example, t.elapsed());
+                println!(
+                    "{}: FAILED at call {} ({:.1?})",
+                    endpoint.name,
+                    f.example,
+                    t.elapsed()
+                );
                 println!("  arguments: {}", f.args_decimal().join(", "));
                 println!(
                     "  exit code: {}",
-                    f.exit_code.map_or("none (killed)".into(), |c| c.to_string())
+                    f.exit_code
+                        .map_or("none (killed)".into(), |c| c.to_string())
                 );
                 if let Some(logging) = f.logging().filter(|l| !l.is_empty()) {
                     println!("  logging: {logging}");
@@ -192,6 +204,8 @@ fn shorten(s: &str, max: usize, verbose: bool) -> String {
 }
 
 fn random_seed() -> u64 {
-    let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
     (nanos as u64) ^ u64::from(std::process::id()).rotate_left(32)
 }

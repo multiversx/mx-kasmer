@@ -18,11 +18,20 @@ pub struct Ml {
 
 impl Ml {
     /// Checks the counts of sorts and arguments and the bound variable against the connective.
-    pub fn new(conn: Conn, sorts: Vec<Sort>, var: Option<Var>, args: Vec<Pattern>) -> Result<Ml, String> {
+    pub fn new(
+        conn: Conn,
+        sorts: Vec<Sort>,
+        var: Option<Var>,
+        args: Vec<Pattern>,
+    ) -> Result<Ml, String> {
         let shape = conn.shape();
         let name = conn.symbol();
         if sorts.len() != shape.sorts {
-            return Err(format!("{name} takes {} sorts, got {}", shape.sorts, sorts.len()));
+            return Err(format!(
+                "{name} takes {} sorts, got {}",
+                shape.sorts,
+                sorts.len()
+            ));
         }
         match (shape.binder, &var) {
             (Binder::None, None) => {}
@@ -75,11 +84,19 @@ impl Ml {
             Conn::Top | Conn::Bottom => (vec![sort(f)?], None, vec![]),
             Conn::Not => (vec![sort(f)?], None, one(f, "arg")?),
             Conn::Implies | Conn::Iff => (vec![sort(f)?], None, two(f, "first", "second")?),
-            Conn::And | Conn::Or => (vec![sort(f)?], None, need(f.patterns.take(), "patterns")?.into_vec()),
+            Conn::And | Conn::Or => (
+                vec![sort(f)?],
+                None,
+                need(f.patterns.take(), "patterns")?.into_vec(),
+            ),
             Conn::Exists | Conn::Forall => (vec![sort(f)?], Some(var(f)?), one(f, "arg")?),
             Conn::Mu | Conn::Nu => (vec![], Some(var(f)?), one(f, "arg")?),
             Conn::Ceil | Conn::Floor => (vec![arg_sort(f)?, sort(f)?], None, one(f, "arg")?),
-            Conn::Equals | Conn::In => (vec![arg_sort(f)?, sort(f)?], None, two(f, "first", "second")?),
+            Conn::Equals | Conn::In => (
+                vec![arg_sort(f)?, sort(f)?],
+                None,
+                two(f, "first", "second")?,
+            ),
             Conn::Next => (vec![sort(f)?], None, one(f, "dest")?),
             Conn::Rewrites => (vec![sort(f)?], None, two(f, "source", "dest")?),
         };

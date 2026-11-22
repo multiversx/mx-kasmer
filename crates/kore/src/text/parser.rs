@@ -252,7 +252,11 @@ impl<'a> Parser<'a> {
 
     fn close(&self, frame: Frame) -> Result<Pattern, ParseError> {
         match frame {
-            Frame::App { symbol, sorts, args } => Ok(Pattern::App(App {
+            Frame::App {
+                symbol,
+                sorts,
+                args,
+            } => Ok(Pattern::App(App {
                 symbol,
                 sorts,
                 args: args.into(),
@@ -277,8 +281,8 @@ impl<'a> Parser<'a> {
             // `done`: a complete pattern, to be added to the frame on top of the stack.
             // Otherwise: a frame was just opened, its argument list may be empty.
             let Some(p) = done.take() else {
-                let empty =
-                    matches!(stack.last(), Some(Frame::App { .. } | Frame::Ml { .. })) && self.la == Tok::RParen;
+                let empty = matches!(stack.last(), Some(Frame::App { .. } | Frame::Ml { .. }))
+                    && self.la == Tok::RParen;
                 if empty {
                     self.advance()?;
                     let frame = stack.pop().expect("frame just pushed");
@@ -404,7 +408,11 @@ impl<'a> Parser<'a> {
                 let vars = self.sort_vars()?;
                 let pattern = self.pattern()?;
                 let attrs = self.attrs()?;
-                let axiom = Axiom { vars, pattern, attrs };
+                let axiom = Axiom {
+                    vars,
+                    pattern,
+                    attrs,
+                };
                 if kw == Keyword::Axiom {
                     Sentence::Axiom(axiom)
                 } else {
@@ -424,7 +432,11 @@ impl<'a> Parser<'a> {
         }
         self.advance()?;
         let attrs = self.attrs()?;
-        Ok(Module { name, sentences, attrs })
+        Ok(Module {
+            name,
+            sentences,
+            attrs,
+        })
     }
 
     pub fn definition(&mut self) -> Result<Definition, ParseError> {

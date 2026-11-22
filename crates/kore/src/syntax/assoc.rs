@@ -32,7 +32,10 @@ pub struct Assoc {
 
 impl Assoc {
     /// From the fields of a JSON object tagged `LeftAssoc` or `RightAssoc`.
-    pub(super) fn from_fields<E: de::Error>(dir: AssocDir, f: &mut PatternFields) -> Result<Assoc, E> {
+    pub(super) fn from_fields<E: de::Error>(
+        dir: AssocDir,
+        f: &mut PatternFields,
+    ) -> Result<Assoc, E> {
         let app = App {
             symbol: need(f.symbol.take(), "symbol")?.into(),
             sorts: need(f.sorts.take(), "sorts")?,

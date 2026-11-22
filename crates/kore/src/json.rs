@@ -42,11 +42,19 @@ pub fn parse_term(src: &str) -> Result<Pattern, JsonError> {
 struct PykFormatter;
 
 impl serde_json::ser::Formatter for PykFormatter {
-    fn begin_array_value<W: ?Sized + io::Write>(&mut self, w: &mut W, first: bool) -> io::Result<()> {
+    fn begin_array_value<W: ?Sized + io::Write>(
+        &mut self,
+        w: &mut W,
+        first: bool,
+    ) -> io::Result<()> {
         if first { Ok(()) } else { w.write_all(b", ") }
     }
 
-    fn begin_object_key<W: ?Sized + io::Write>(&mut self, w: &mut W, first: bool) -> io::Result<()> {
+    fn begin_object_key<W: ?Sized + io::Write>(
+        &mut self,
+        w: &mut W,
+        first: bool,
+    ) -> io::Result<()> {
         if first { Ok(()) } else { w.write_all(b", ") }
     }
 
@@ -54,7 +62,11 @@ impl serde_json::ser::Formatter for PykFormatter {
         w.write_all(b": ")
     }
 
-    fn write_string_fragment<W: ?Sized + io::Write>(&mut self, w: &mut W, fragment: &str) -> io::Result<()> {
+    fn write_string_fragment<W: ?Sized + io::Write>(
+        &mut self,
+        w: &mut W,
+        fragment: &str,
+    ) -> io::Result<()> {
         let mut plain = 0;
         for (i, c) in fragment.char_indices() {
             if c.is_ascii() {
@@ -151,7 +163,12 @@ mod tests {
         ] {
             assert!(parse_pattern(json).is_err(), "{json}");
         }
-        assert!(parse_term(r#"{"format": "KORE", "version": 2, "term": {"tag": "String", "value": ""}}"#).is_err());
+        assert!(
+            parse_term(
+                r#"{"format": "KORE", "version": 2, "term": {"tag": "String", "value": ""}}"#
+            )
+            .is_err()
+        );
     }
 
     #[test]
