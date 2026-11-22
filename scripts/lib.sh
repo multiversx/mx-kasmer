@@ -63,6 +63,12 @@ ensure_container() {
         if [ "$(docker container inspect --format '{{.Config.Image}}' "$CONTAINER")" != "$IMAGE" ]; then
             echo ">> K version changed, recreating container $CONTAINER"
             docker rm -f "$CONTAINER" >/dev/null
+        # ... and when the repository has moved on the host.
+        elif [ "$(docker container inspect --format \
+                "{{range .Mounts}}{{if eq .Destination \"$IN_CONTAINER_ROOT\"}}{{.Source}}{{end}}{{end}}" \
+                "$CONTAINER")" != "$ROOT" ]; then
+            echo ">> repository moved, recreating container $CONTAINER"
+            docker rm -f "$CONTAINER" >/dev/null
         fi
     fi
     if ! docker container inspect "$CONTAINER" >/dev/null 2>&1; then
