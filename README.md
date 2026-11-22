@@ -138,6 +138,26 @@ file modification times, which a fresh checkout resets, so the workflow first ru
 `scripts/ci/content-mtimes.sh` to give every file a timestamp derived from its content. Only
 definitions whose sources changed are then rebuilt.
 
+### Rust tooling
+
+The Rust replacement of the Python tooling is being written in `crates/`, a Cargo workspace at the
+repository root. It runs on the host and needs only a Rust toolchain:
+
+```sh
+cargo test
+```
+
+| Crate | Contents |
+|---|---|
+| `kore` | KORE term model; text and JSON parsers and printers |
+
+The Python tooling stays until the Rust tool can replace it, and serves as the reference: the Rust
+crates are checked against output of pyk. `scripts/kore-corpus.sh` writes that reference data into
+`.conformance/kore/` (two compiled definitions, their 34,000 axioms, configurations with deployed
+contracts, and raw output of the LLVM interpreter); `cargo test` then checks that `kore` parses all
+of it and prints the same text and JSON as pyk, byte for byte. Without the data those tests pass
+with a notice.
+
 ### Known limitations
 
 - Tests that need contracts compiled from the old `mx-sdk-rs` submodule are not run: the scenario
