@@ -1,0 +1,12 @@
+[package]
+name = "kasmer"
+version = "0.1.0"
+description = "Parametric tests of MultiversX smart contracts on the K semantics of the VM: fuzzing, and later verification"
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+kore = { path = "../kore" }
+kwasm = { path = "../kwasm" }
+serde_json = "1.0.154"

@@ -141,23 +141,37 @@ definitions whose sources changed are then rebuilt.
 ### Rust tooling
 
 The Rust replacement of the Python tooling is being written in `crates/`, a Cargo workspace at the
-repository root. It runs on the host and needs only a Rust toolchain:
+repository root. It runs on the host; running contracts also needs the compiled LLVM definition,
+which for now is in the container:
 
 ```sh
 cargo test
+
+# Fuzzing: make the definition usable from the host, then fuzz a test project.
+scripts/llvm-kasmer-host.sh                       # writes .build/llvm-kasmer/
+export KASMER_LLVM_DEFINITION=$PWD/.build/llvm-kasmer
+cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt fuzz
 ```
 
 | Crate | Contents |
 |---|---|
 | `kore` | KORE term model; text and JSON parsers and printers; symbol signatures and well-sorted term building from K labels |
 | `kwasm` | Wasm binary to the K term of its module (replaces pykwasm's `wasm2kast` and pyk's `kast_to_kore`) |
+| `kasmer` | The library: test projects, setting up and deploying into the configuration, running the LLVM interpreter, fuzzing. Depends only on `kore`, `kwasm` and `serde_json` |
+| `kasmer-cli` | The command line, `kasmer-rs` for now: `fuzz` (replaces `kasmer fuzz`) and `deploy` (prints the deployed configuration) |
+
+`scripts/llvm-kasmer-host.sh` copies `definition.kore` out of the container and writes an
+`interpreter` wrapper that runs the real one there with `docker exec`. Where the K backends run
+natively, the compiled definition directory can be used directly.
 
 The Python tooling stays until the Rust tool can replace it, and serves as the reference: the Rust
 crates are checked against output of pyk. `scripts/kore-corpus.sh` writes that reference data into
 `.conformance/kore/` (two compiled definitions, their 34,000 axioms, configurations with deployed
-contracts, raw output of the LLVM interpreter, and the module terms of every contract in
-`contracts/` and of upstream's Wasm test modules); `cargo test` then checks the crates against it,
-byte for byte. Without the data those tests pass with a notice.
+contracts, raw output of the LLVM interpreter, the module terms of every contract in `contracts/`
+and of upstream's Wasm test modules, and the fuzzing setup of four test projects with calls and
+their exit codes); `cargo test` then checks the crates against it, byte for byte. Without the data
+those tests pass with a notice. The tests that run the interpreter also need
+`KASMER_LLVM_DEFINITION`.
 
 ### Known limitations
 

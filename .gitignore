@@ -33,3 +33,6 @@ __pycache__/
 
 # Rust
 /target/
+
+# host-side definition directories written by scripts/llvm-kasmer-host.sh
+/.build/

@@ -16,6 +16,16 @@ Output, in the directory given as the only argument:
                                     wasm2kast, then pyk's kast_to_kore (crates/kwasm)
     wasm/wat/<name>.wasm            crates/kwasm/tests/wat/<name>.wat compiled with wat2wasm
     wasm/wat/<name>.kore            its module, converted as above, without a file name
+    kasmer/runtime.kore             the runtime configuration (with the ESDT system contract), as
+                                    kmultiversx.runtime computes it from
+                                    contracts/esdt-system-sc; the projects below are deployed on it
+                                    rather than on the precomputed kdist/runtime/llvm-kasmer.json
+    kasmer/<project>/template.kore  a test project of contracts/parametric-tests deployed as
+                                    `kasmer fuzz` deploys it, with the variable K_STEPS in the
+                                    <k> cell: the template the fuzzer fills (crates/kasmer)
+    kasmer/<project>/calls.jsonl    calls of its test endpoints with fixed arguments: endpoint,
+                                    arguments, the steps put in <k> (KORE text) and the exit code
+                                    of the interpreter on the filled template
 
 pykwasm is corrected before converting: it gives i64.extend8_s, i64.extend16_s and
 i64.extend32_s the type i32 (kwasm_ast.py), crates/kwasm gives them i64.
@@ -29,7 +39,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from pyk.kast.inner import KApply, KSort, Subst
+from pyk.kast.inner import KApply, KSequence, KSort, KVariable, Subst
 from pyk.kast.manip import split_config_from
 from pyk.kast.prelude.utils import token
 from pyk.kdist import kdist
@@ -41,7 +51,8 @@ import pykwasm.binary.instructions
 import pykwasm.kwasm_ast as wast
 from pykwasm.wasm2kast import wasm2kast
 
-from kmultiversx import scenario
+from kmultiversx import kasmer, scenario
+from kmultiversx.runtime import load_runtime
 from kmultiversx.scenario import KMap
 from kmultiversx.utils import GENERATED_TOP_CELL, llvm_interpret_raw, load_wasm, read_kasmer_runtime
 
@@ -164,11 +175,94 @@ def write_wasm(out: Path) -> None:
     print(f'wat: {len(wat_files)} modules')
 
 
+# Test projects run through the fuzzing flow of kmultiversx.kasmer, with fixed arguments.
+KASMER_PROJECTS = ['adder-pt', 'adder-pt-fail', 'crowdfunding-pt', 'multisig-pt']
+
+# Arguments per ABI type. Each call passes the same value for every argument.
+KASMER_ARGUMENTS = {
+    'BigUint': ['0', '1', '255', '256', '1000000', str(2**64), str(2**256 - 1)],
+    'u32': ['0', '1', '4294967295'],
+    'u64': ['0', '1', '18446744073709551615'],
+}
+
+
+def kasmer_steps(krun: KRun, endpoint: str, args: tuple[str, ...]) -> Pattern:
+    """The <k> cell of one fuzzing run, as `_make_k_steps` in kmultiversx.kasmer builds it."""
+    step = {
+        'tx': {
+            'from': kasmer.ROOT_ACCT_ADDR,
+            'to': kasmer.TEST_SC_ADDR,
+            'function': endpoint,
+            'value': '0',
+            'arguments': args,
+            'gasLimit': '5,000,000,000',
+            'gasPrice': '0',
+        },
+        'expect': {'status': '0'},
+    }
+    steps = [kasmer.set_exit_code(1)] + scenario.get_steps_sc_call(step) + [kasmer.set_exit_code(0)]
+    return krun.kast_to_kore(KSequence(steps))
+
+
+def contract_wasm_path(test_dir: Path, contract: str | dict) -> Path:
+    """As kmxwasm.kasmer.utils.read_contract_target, without making the path absolute."""
+    if isinstance(contract, str):
+        contract = {'path': contract}
+    directory = Path(os.path.normpath(test_dir / contract['path']))
+    if 'name' in contract:
+        return directory / 'output' / f"{contract['name']}.wasm"
+    (path,) = directory.glob('output/*.wasm')
+    return path
+
+
+def write_kasmer(out: Path) -> None:
+    """Paths are relative to the repository root (the current directory, see write_wasm), so that
+    the file names stored in the modules do not depend on where the repository is."""
+    definition_dir = kdist.get('mx-semantics.llvm-kasmer')
+    krun = KRun(definition_dir)
+    runtime = load_runtime(krun, load_wasm(Path('contracts/esdt-system-sc/output/esdt-system-sc.wasm')))
+    (out / 'kasmer').mkdir(parents=True, exist_ok=True)
+    (out / 'kasmer' / 'runtime.kore').write_text(krun.kast_to_kore(runtime, sort=GENERATED_TOP_CELL).text)
+    # deploy_test starts from the precomputed runtime; start from this one instead.
+    kasmer.read_kasmer_runtime = lambda: runtime
+    for name in KASMER_PROJECTS:
+        test_dir = Path('contracts/parametric-tests') / name
+        (test_wasm_path,) = test_dir.glob('output/*.wasm')
+        project = json.loads((test_dir / 'kasmer.json').read_text())
+        contract_paths = [contract_wasm_path(test_dir, c) for c in project['contracts']]
+        sym_conf, init_subst = kasmer.deploy_test(
+            krun, load_wasm(test_wasm_path), kasmer.load_contract_wasms(contract_paths)
+        )
+        subst = dict(init_subst)
+        subst['K_CELL'] = KVariable('K_STEPS')
+        template = krun.kast_to_kore(Subst(subst)(sym_conf))
+        if template.symbol == 'inj':  # as in kasmer.run_concrete
+            template = template.args[0]
+        template_text = template.text
+
+        d = out / 'kasmer' / name
+        d.mkdir(parents=True, exist_ok=True)
+        (d / 'template.kore').write_text(template_text)
+        var = "VarK'Unds'STEPS : SortK{}"
+        assert template_text.count(var) == 1, var
+
+        calls = []
+        for endpoint, types in kasmer.get_test_endpoints(test_dir).items():
+            for i in range(max((len(KASMER_ARGUMENTS[t]) for t in types), default=1)):
+                args = tuple(KASMER_ARGUMENTS[t][min(i, len(KASMER_ARGUMENTS[t]) - 1)] for t in types)
+                steps = kasmer_steps(krun, endpoint, args).text
+                proc = llvm_interpret_raw(definition_dir, template_text.replace(var, steps))
+                calls.append({'endpoint': endpoint, 'args': list(args), 'steps': steps, 'exit_code': proc.returncode})
+                print(f'kasmer {name} {endpoint}{args}: exit code {proc.returncode}')
+        (d / 'calls.jsonl').write_text(''.join(json.dumps(c, sort_keys=True) + '\n' for c in calls))
+
+
 def main() -> None:
     out = Path(sys.argv[1]).resolve()
     write_definitions(out)
     write_configs(out)
     write_wasm(out)
+    write_kasmer(out)
 
 
 if __name__ == '__main__':

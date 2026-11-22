@@ -79,6 +79,80 @@ impl Pattern {
         }
         max
     }
+
+    /// Rebuilds the pattern bottom-up: `f` gets each subpattern with its arguments already
+    /// rebuilt, children before parents. Does not recurse.
+    pub fn map_bottom_up(self, mut f: impl FnMut(Pattern) -> Pattern) -> Pattern {
+        /// A pattern whose arguments are being rebuilt.
+        struct Frame {
+            node: Pattern,
+            todo: std::vec::IntoIter<Pattern>,
+            done: Vec<Pattern>,
+        }
+        let mut stack: Vec<Frame> = Vec::new();
+        let mut current = self;
+        loop {
+            let args = current.args_mut().map(std::mem::take).unwrap_or_default();
+            let mut todo = args.into_iter();
+            if let Some(first) = todo.next() {
+                let done = Vec::with_capacity(todo.len() + 1);
+                stack.push(Frame {
+                    node: current,
+                    todo,
+                    done,
+                });
+                current = first;
+                continue;
+            }
+            // A leaf, or a pattern whose arguments are all rebuilt: go up until there is an
+            // argument left to rebuild.
+            let mut result = f(current);
+            loop {
+                let Some(frame) = stack.last_mut() else {
+                    return result;
+                };
+                frame.done.push(result);
+                if let Some(next) = frame.todo.next() {
+                    current = next;
+                    break;
+                }
+                let Frame { mut node, done, .. } = stack.pop().expect("not empty");
+                *node.args_mut().expect("has arguments") = done;
+                result = f(node);
+            }
+        }
+    }
+
+    /// Replaces `\left-assoc` and `\right-assoc` by nested binary applications, as pyk does when
+    /// converting to KAST: `\left-assoc{}(f{}(a, b, c))` becomes `f{}(f{}(a, b), c)`, and an
+    /// application to a single argument becomes the argument. The LLVM interpreter prints
+    /// collections with `\left-assoc`.
+    pub fn desugar_assoc(self) -> Pattern {
+        self.map_bottom_up(|p| match p {
+            Pattern::Assoc(Assoc { dir, app }) => {
+                let App { symbol, sorts, args } = app;
+                let args = args.into_vec();
+                let join = |a: Pattern, b: Pattern| Pattern::app(symbol.clone(), sorts.clone(), vec![a, b]);
+                match dir {
+                    AssocDir::Left => {
+                        let mut it = args.into_iter();
+                        match it.next() {
+                            Some(first) => it.fold(first, join),
+                            None => Pattern::app(symbol.clone(), sorts.clone(), vec![]),
+                        }
+                    }
+                    AssocDir::Right => {
+                        let mut it = args.into_iter().rev();
+                        match it.next() {
+                            Some(last) => it.fold(last, |acc, a| join(a, acc)),
+                            None => Pattern::app(symbol.clone(), sorts.clone(), vec![]),
+                        }
+                    }
+                }
+            }
+            other => other,
+        })
+    }
 }
 
 /// Variables, strings and domain values here; the other variants in their own types.

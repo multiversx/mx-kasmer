@@ -172,7 +172,24 @@ endmodule []"#;
         let p = parse_pattern(&src).unwrap();
         assert_eq!(p.depth(), N + 1);
         assert_eq!(p.to_string(), src);
+        // Rebuilt without change, and still not recursing.
+        let p = p.map_bottom_up(|p| p);
+        assert_eq!(p.depth(), N + 1);
         drop(p);
+    }
+
+    #[test]
+    fn desugar_assoc() {
+        let desugar = |s: &str| parse_pattern(s).unwrap().desugar_assoc().to_string();
+        assert_eq!(
+            desugar(r"\left-assoc{}(f{}(a{}(), b{}(), \left-assoc{}(g{}(c{}())), d{}()))"),
+            "f{}(f{}(f{}(a{}(), b{}()), c{}()), d{}())"
+        );
+        assert_eq!(
+            desugar(r"h{}(\right-assoc{}(f{}(a{}(), b{}(), c{}())))"),
+            "h{}(f{}(a{}(), f{}(b{}(), c{}())))"
+        );
+        assert_eq!(desugar(r"\left-assoc{}(f{}())"), "f{}()");
     }
 
     #[test]
