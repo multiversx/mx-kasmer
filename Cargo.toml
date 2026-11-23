@@ -1,0 +1,10 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+# The test contracts are built separately, with sc-meta.
+exclude = ["contracts"]
+
+[workspace.package]
+edition = "2024"
+repository = "https://github.com/multiversx/mx-kasmer"
+publish = false

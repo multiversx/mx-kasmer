@@ -138,6 +138,63 @@ file modification times, which a fresh checkout resets, so the workflow first ru
 `scripts/ci/content-mtimes.sh` to give every file a timestamp derived from its content. Only
 definitions whose sources changed are then rebuilt.
 
+### Rust tooling
+
+The Rust replacement of the Python tooling is being written in `crates/`, a Cargo workspace at the
+repository root. It runs on the host; running contracts also needs the compiled LLVM definition,
+and symbolic execution the `kore-rpc-booster` server, which for now are in the container:
+
+```sh
+cargo test
+
+# Fuzzing: make the definition usable from the host, then fuzz a test project.
+scripts/llvm-kasmer-host.sh                       # writes .build/llvm-kasmer/
+export KASMER_LLVM_DEFINITION=$PWD/.build/llvm-kasmer
+cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt fuzz
+
+# Verification: a server directory for the booster in the container, then prove each test
+# endpoint for all arguments. Proofs are saved in <project>/.kasmer/proofs and resumed when run
+# again (--fresh to start over).
+scripts/kore-rpc-host.sh                          # writes .build/kore-rpc/
+export KASMER_RPC_SERVER=$PWD/.build/kore-rpc
+cargo run --release -p kasmer-cli -- -C contracts/parametric-tests/adder-pt verify -v
+```
+
+| Crate | Contents |
+|---|---|
+| `kore` | KORE term model; text and JSON parsers and printers; symbol signatures and well-sorted term building from K labels |
+| `kwasm` | Wasm binary to the K term of its module (replaces pykwasm's `wasm2kast` and pyk's `kast_to_kore`) |
+| `kasmer` | The library: test projects, setting up and deploying into the configuration, running the LLVM interpreter, fuzzing; claims and their proofs on the booster (cut points, cell abstraction, Wasm instantiation on the LLVM interpreter). Depends on `kore`, `kwasm`, `kore-rpc`, `kcfg` and `serde_json` |
+| `kasmer-cli` | The command line, `kasmer-rs` for now: `fuzz` (replaces `kasmer fuzz`), `verify` (replaces `kasmer claims` and `kasmer verify`) and `deploy` (prints the deployed configuration) |
+| `kore-rpc` | Client of the K JSON-RPC servers (`execute`, `implies`, `simplify`, `get-model`, `add-module`), and a launcher that starts a server from a server directory and connects to it, also in a container |
+| `kcfg` | Proof graphs in KORE, as pyk's `KCFG`: constrained terms, edges, covers, splits, branches; extending a node from an `execute` result as pyk does; saved to disk as the proof goes, so that a proof can be resumed |
+
+`scripts/llvm-kasmer-host.sh` copies `definition.kore` out of the container and writes an
+`interpreter` wrapper that runs the real one there with `docker exec`. Where the K backends run
+natively, the compiled definition directory can be used directly.
+
+`scripts/kore-rpc-host.sh` does the same for the booster: a `server` script that starts it in the
+container (and stops it when its standard input closes, so no server outlives the host process),
+and a `connect` script that forwards a connection to it through `docker exec`, since the container
+publishes no ports.
+
+The Python tooling stays until the Rust tool can replace it, and serves as the reference: the Rust
+crates are checked against output of pyk. `scripts/kore-corpus.sh` writes that reference data into
+`.conformance/kore/` (two compiled definitions, their 34,000 axioms, configurations with deployed
+contracts, raw output of the LLVM interpreter, the module terms of every contract in `contracts/`
+and of upstream's Wasm test modules, and the fuzzing setup of four test projects with calls and
+their exit codes); `cargo test` then checks the crates against it, byte for byte. Without the data
+those tests pass with a notice. The tests that run the interpreter also need
+`KASMER_LLVM_DEFINITION`.
+
+`scripts/rpc-corpus.sh` records proofs of the Python tooling (`kasmer verify` of two endpoints of
+`adder-pt` and the failing one of `adder-pt-fail`, about ten minutes) into `.conformance/rpc/`: the
+claim's first two nodes in KORE, every JSON-RPC exchange with the booster, how pyk read each
+execution result, and the final proof graph. `kore-rpc` and `kcfg` check themselves against it;
+`kasmer` builds the same claims and, with `KASMER_RPC_SERVER` set, proves them with the same
+result and the same graph. With `KASMER_RPC_SERVER` set, the recorded requests are also replayed
+against a fresh server.
+
 ### Known limitations
 
 - Tests that need contracts compiled from the old `mx-sdk-rs` submodule are not run: the scenario

@@ -1,0 +1,12 @@
+[package]
+name = "kore-rpc"
+version = "0.1.0"
+description = "Client of the K JSON-RPC servers (kore-rpc, kore-rpc-booster), and a launcher for them"
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+kore = { path = "../kore" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"

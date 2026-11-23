@@ -27,3 +27,14 @@ __pycache__/
 
 # build cache directory used by CI (KASMER_CACHE)
 /.kasmer-cache/
+
+# reference data written by scripts/kore-corpus.sh
+/.conformance/
+
+# Rust
+/target/
+
+# host-side definition directories written by scripts/llvm-kasmer-host.sh
+/.build/
+# Proofs saved by kasmer-rs verify
+.kasmer/
